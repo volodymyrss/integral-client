@@ -80,18 +80,29 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
         print r.content
 
 
-def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False):
-    s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
-    theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
+def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS"):
+    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
+   # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
+    url+="&emin=%(emin).5lg"
+    url += "&emax=%(emax).5lg"
+    
+
+    url = url % dict(
+        lt=lt,
+        alpha=alpha,
+        epeak=epeak,
+        ampl=ampl,
+        emin=emin,
+        emax=emax,
+        emax_rate=emax_rate
+    )
 
     if debug:
-        print s
-    r = requests.get(s)
+        print url
+    r = requests.get(url).json()
 
-    try:
-        return r.json()
-    except:
-        print r.content
+    return r['rate']
+
 
 def get_sc(utc, ra, dec, debug=False):
     s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
