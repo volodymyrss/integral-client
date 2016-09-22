@@ -80,11 +80,11 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
         print r.content
 
 
-def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS"):
+def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response"):
     url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
-    url += "&emax=%(emax).5lg"
+    url+="&emax=%(emax).5lg"
     
 
     url = url % dict(
@@ -101,7 +101,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
         print url
     r = requests.get(url).json()
 
-    return r['rate']
+    return r[kind]
 
 
 def get_sc(utc, ra, dec, debug=False):
@@ -115,11 +115,15 @@ def get_sc(utc, ra, dec, debug=False):
         print r.content
 
 
-def get_hk(**args):
+def get_hk(**uargs):
+    args={}
+    args.update(uargs)
+
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
 
-    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/600/stats?" % args + \
+
+    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
         "rebin=0.01&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
     print s.replace("stats", "png")
 
