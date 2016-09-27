@@ -104,7 +104,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
     return r[kind]
 
 
-def get_sc(utc, ra, dec, debug=False):
+def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print s
@@ -116,7 +116,9 @@ def get_sc(utc, ra, dec, debug=False):
 
 
 def get_hk(**uargs):
-    args={}
+    args=dict(
+            rebin=0
+            )
     args.update(uargs)
 
     if args['target']=="VETO":
@@ -124,7 +126,7 @@ def get_hk(**uargs):
 
 
     s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
-        "rebin=0.01&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
+        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
     print s.replace("stats", "png")
 
     if 'dry' in args and args['dry']:
