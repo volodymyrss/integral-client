@@ -10,7 +10,12 @@ def get_acs_effarea(theta,phi,lt=100):
     return loadtxt(StringIO.StringIO(requests.get("http://localhost:5555/api/v1.0/effarea/direction/%.5lg/%.5lg?lt=%.5lg"%(theta,phi,lt)).content))
 
 def converttime(informat,intime,outformat):
-    return requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat).content
+    r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat)
+    try:
+        return r.json()
+    except:
+        return r.content
+    
 
 def data_analysis(name, modules, assume):
     c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/" + name,
