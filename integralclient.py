@@ -143,9 +143,12 @@ def get_hk(**uargs):
 
     r = requests.get(s)
     try:
+        if r.status_code!=200:
+            raise
         return r.json()
     except:
         print r.content
+        raise Exception(r.content)
 
 
 def get_cat(utc):
