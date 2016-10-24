@@ -35,9 +35,9 @@ def data_analysis_forget(jobkey):
         return c.content
 
 
-def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS"):
-    s = "http://134.158.75.161/integral/api/v1.0/spiresponse/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
-    theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
+def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS",beta=-2.5,model="compton"):
+    s = "http://134.158.75.161/integral/api/v1.0/spiresponse/direction/%.5lg/%.5lg?lt=%.5lg&model=%s&beta=%.5lg&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
+    theta, phi, lt, model, beta, ampl, alpha, epeak, emin, emax, emax_rate)
 
     if debug:
         print s
@@ -48,11 +48,11 @@ def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax
     except:
         print r.content
 
-def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS"):
+def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton",beta=-2.5):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
     #theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
 
-    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
+    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url += "&emax=%(emax).5lg"
@@ -64,6 +64,8 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
         radius=radius,
         alpha=alpha,
         epeak=epeak,
+        model=model,
+        beta=beta,
         ampl=ampl,
         emin=emin,
         emax=emax,
@@ -85,8 +87,8 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
         print r.content
 
 
-def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response"):
-    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
+def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
+    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
@@ -95,7 +97,9 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
 
     url = url % dict(
         lt=lt,
+        model=model,
         alpha=alpha,
+        beta=beta,
         epeak=epeak,
         ampl=ampl,
         emin=emin,
