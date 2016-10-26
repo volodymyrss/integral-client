@@ -10,6 +10,12 @@ def get_acs_effarea(theta,phi,lt=100):
     return loadtxt(StringIO.StringIO(requests.get("http://localhost:5555/api/v1.0/effarea/direction/%.5lg/%.5lg?lt=%.5lg"%(theta,phi,lt)).content))
 
 def converttime(informat,intime,outformat):
+    if isinstance(intime,float):
+        intime="%.20lg"%intime
+    
+    if isinstance(intime,int):
+        intime="%i"%intime
+
     r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat)
     try:
         return r.json()
