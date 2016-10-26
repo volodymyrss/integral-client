@@ -17,10 +17,13 @@ def converttime(informat,intime,outformat):
         intime="%i"%intime
 
     r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat)
-    try:
-        return r.json()
-    except:
-        return r.content
+
+    if outformat=="ANY":
+        try:
+            return r.json()
+        except:
+            pass
+    return r.content
     
 
 def data_analysis(name, modules, assume):
