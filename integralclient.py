@@ -101,6 +101,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
+    url+="&emax_rate=%(emax_rate).5lg"
     
     lt=str(lt)
 
