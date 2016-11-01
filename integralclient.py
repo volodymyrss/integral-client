@@ -3,11 +3,18 @@ import StringIO
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
+import os
+
+secret_location=os.environ['HOME']+"/.secret-client"
+
+def get_auth():
+    username="integral"
+    password=open(secret_location).read().strip()
+    return requests.auth.HTTPBasicAuth(username, password)
+
+auth=get_auth()
 
 integral_services_server="134.158.75.161"
-
-def get_acs_effarea(theta,phi,lt=100):
-    return loadtxt(StringIO.StringIO(requests.get("http://localhost:5555/api/v1.0/effarea/direction/%.5lg/%.5lg?lt=%.5lg"%(theta,phi,lt)).content))
 
 def converttime(informat,intime,outformat):
     if isinstance(intime,float):
@@ -16,7 +23,7 @@ def converttime(informat,intime,outformat):
     if isinstance(intime,int):
         intime="%i"%intime
 
-    r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat)
+    r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat,auth=auth)
 
     if outformat=="ANY":
         try:
@@ -50,7 +57,7 @@ def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax
 
     if debug:
         print s
-    r = requests.get(s)
+    r = requests.get(s,auth=auth)
 
     try:
         return r.json()
@@ -85,7 +92,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 
     if debug:
         print url
-    r = requests.get(url)
+    r = requests.get(url,auth=auth)
 
     try:
         r=r.json()
@@ -119,7 +126,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
 
     if debug:
         print url
-    r = requests.get(url).json()
+    r = requests.get(url,auth=auth).json()
 
     return r[kind]
 
@@ -128,7 +135,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print s
-    r = requests.get(s)
+    r = requests.get(s,auth=auth)
     try:
         return r.json()
     except:
@@ -155,7 +162,7 @@ def get_hk(**uargs):
     if 'onlyprint' in args and args['onlyprint']:
         return
 
-    r = requests.get(s)
+    r = requests.get(s,auth=auth)
     try:
         if r.status_code!=200:
             raise
@@ -168,7 +175,7 @@ def get_hk(**uargs):
 def get_cat(utc):
     s = "http://134.158.75.161/cat/grbcatalog/api/v1.1/" + utc
     print s
-    r = requests.get(s)
+    r = requests.get(s,auth=auth)
     try:
         return r.json()
     except:
