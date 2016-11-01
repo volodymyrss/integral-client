@@ -140,6 +140,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         return r.json()
     except:
         print r.content
+        raise
 
 
 def get_hk(**uargs):
