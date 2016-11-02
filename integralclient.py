@@ -151,7 +151,9 @@ def get_sc(utc, ra=0, dec=0, debug=False):
 
 def get_hk_lc(target,utc,span,**uargs):
     args=dict(
-            rebin=0
+            rebin=0,
+            ra=0,
+            dec=0,
             )
     args.update(uargs)
 
