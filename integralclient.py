@@ -25,6 +25,9 @@ def converttime(informat,intime,outformat):
 
     r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat,auth=auth)
 
+    if r.status_code!=200:
+        raise Exception('error from timesystem server: '+r.content)
+
     if outformat=="ANY":
         try:
             return r.json()
