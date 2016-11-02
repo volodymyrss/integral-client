@@ -16,6 +16,9 @@ auth=get_auth()
 
 integral_services_server="134.158.75.161"
 
+class Waiting(Exception):
+    pass
+
 def converttime(informat,intime,outformat):
     if isinstance(intime,float):
         intime="%.20lg"%intime
@@ -146,6 +149,38 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         print r.content
         raise
 
+def get_hk_lc(target,utc,span,**uargs):
+    args=dict(
+            rebin=0
+            )
+    args.update(uargs)
+
+    args['target']=target
+    args['utc']=utc
+    args['span']=span
+
+    if args['target']=="VETO":
+        args['target'] = "IBIS_VETO"
+
+    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg?" % args + \
+        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
+
+    if 'dry' in args and args['dry']:
+        return
+
+    if 'onlyprint' in args and args['onlyprint']:
+        return
+
+    r = requests.get(s,auth=auth)
+    try:
+        if r.status_code==202:
+            raise Waiting(r.content)
+        if r.status_code!=200:
+            raise
+        return r
+    except:
+        print r.content
+        raise Exception(r.content)
 
 def get_hk(**uargs):
     args=dict(
