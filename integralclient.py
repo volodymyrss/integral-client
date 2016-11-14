@@ -106,8 +106,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 
         return {'flux':r['enflux'],'phflux':r['phflux'],'response':np.mean(r['response']),'rate':np.mean(r['rate']),'rate_min':np.min(r['rate']),'rate_max':np.max(r['rate'])}
     except Exception as e:
-        raise
-        print r.content
+        raise Exception("problem with service: "+r.content)
 
 
 def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
@@ -162,6 +161,7 @@ def get_hk_lc(target,utc,span,**uargs):
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
+        raise Exception(r.content)
 
     s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg" % args 
 
