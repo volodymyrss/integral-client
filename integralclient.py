@@ -1,4 +1,5 @@
 import requests
+import urllib
 import StringIO
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -219,6 +220,14 @@ def get_cat(utc):
         raise Exception(r.content)
 
 
-        # print get_response(theta=90,phi=360-50,alpha=-0.4,epeak=3000,emin=10,emax=1000,lt=100, ampl=0.1)
+import time
+def get_service(service,url,params={},wait=False):
+    s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
+    print s
 
+    while True:
+        r = requests.get(s,auth=auth,params=params)
+        if not wait or r.status_code==200:
+            return r
+        time.sleep(1.)
 
