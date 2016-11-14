@@ -145,15 +145,14 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     r = requests.get(s,auth=auth)
     try:
         return r.json()
-    except:
+    except Exception as e:
         print r.content
-        raise
+        raise Exception(e,r.content)
 
 def get_hk_lc(target,utc,span,**uargs):
     args=dict(
             rebin=0,
-            ra=0,
-            dec=0,
+            api="v1.0",
             )
     args.update(uargs)
 
@@ -164,8 +163,7 @@ def get_hk_lc(target,utc,span,**uargs):
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
 
-    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg?" % args + \
-        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
+    s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg" % args 
 
     if 'dry' in args and args['dry']:
         return
@@ -174,15 +172,12 @@ def get_hk_lc(target,utc,span,**uargs):
         return
 
     r = requests.get(s,auth=auth)
-    try:
-        if r.status_code==202:
-            raise Waiting(r.content)
-        if r.status_code!=200:
-            raise
-        return r
-    except:
+    if r.status_code==202:
         print r.content
-        raise Exception(r.content)
+        raise Waiting(r.content)
+    if r.status_code!=200:
+        raise
+    return r
 
 def get_hk(**uargs):
     args=dict(
