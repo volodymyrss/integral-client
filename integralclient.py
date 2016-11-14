@@ -221,7 +221,7 @@ def get_cat(utc):
 
 
 import time
-def get_service(service,url,params={},wait=False):
+def query_web_service(service,url,params={},wait=False):
     s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
     print s
 
