@@ -227,7 +227,8 @@ def query_web_service(service,url,params={},wait=False):
 
     while True:
         r = requests.get(s,auth=auth,params=params)
+        print r
         if not wait or r.status_code==200:
-            return r
+            return r.content
         time.sleep(1.)
 
