@@ -27,10 +27,11 @@ def converttime(informat,intime,outformat):
     if isinstance(intime,int):
         intime="%i"%intime
 
-    r=requests.get('http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat,auth=auth)
+    url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
+    r=requests.get(url,auth=auth)
 
     if r.status_code!=200:
-        raise Exception('error from timesystem server: '+r.content)
+        raise Exception('error converting '+url+'; from timesystem server: '+r.content)
 
     if outformat=="ANY":
         try:
@@ -227,8 +228,10 @@ def query_web_service(service,url,params={},wait=False):
 
     while True:
         r = requests.get(s,auth=auth,params=params)
-        print r
-        if not wait or r.status_code==200:
-            return r.content
+        print r.content
+        if r.status_code==200:
+            return r
+        if not wait:
+            raise Waiting(r.content)
         time.sleep(1.)
 
