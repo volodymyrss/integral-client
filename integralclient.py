@@ -17,9 +17,6 @@ auth=get_auth()
 
 integral_services_server="134.158.75.161"
 
-class Waiting(Exception):
-    pass
-
 def converttime(informat,intime,outformat):
     if isinstance(intime,float):
         intime="%.20lg"%intime
@@ -143,7 +140,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print s
-    r = requests.get(s,auth=auth)
+    r = requests.get(s,auth=auth,timeout=300)
     try:
         return r.json()
     except Exception as e:
@@ -232,6 +229,6 @@ def query_web_service(service,url,params={},wait=False):
         if r.status_code==200:
             return r
         if not wait:
-            raise Waiting(r.content)
+            raise Waiting(s,r.content)
         time.sleep(1.)
 

@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
         name='integral-client',
         version='1.0',
-        py_modules= ['integralclient','ddaclient'],
+        py_modules= ['integralclient','ddaclient','service_exception'],
         package_data     = {
             "": [
                 "*.txt",
