@@ -29,7 +29,7 @@ def converttime(informat,intime,outformat):
     r=requests.get(url,auth=auth)
 
     if r.status_code!=200:
-        raise Exception('error converting '+url+'; from timesystem server: '+r.content)
+        raise ServiceException('error converting '+url+'; from timesystem server: '+r.content)
 
     if outformat=="ANY":
         try:
@@ -52,7 +52,7 @@ def data_analysis_forget(jobkey):
     c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/jobs/forget/" + jobkey)
     try:
         return c.json()
-    except Exception as e:
+    except ServiceException as e:
         print e
         return c.content
 
@@ -106,7 +106,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 
         return {'flux':r['enflux'],'phflux':r['phflux'],'response':np.mean(r['response']),'rate':np.mean(r['rate']),'rate_min':np.min(r['rate']),'rate_max':np.max(r['rate'])}
     except Exception as e:
-        raise Exception("problem with service: "+r.content)
+        raise ServiceException("problem with service: "+r.content)
 
 
 def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
@@ -146,7 +146,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         return r.json()
     except Exception as e:
         print r.content
-        raise Exception(e,r.content)
+        raise ServiceException(e,r.content)
 
 def get_hk_lc(target,utc,span,**uargs):
     args=dict(
@@ -161,7 +161,7 @@ def get_hk_lc(target,utc,span,**uargs):
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
-        raise Exception(r.content)
+        raise ServiceException(r.content)
 
     s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg" % args 
 
@@ -180,7 +180,7 @@ def get_hk_lc(target,utc,span,**uargs):
                 c=r.content
             raise Waiting(s,c)
     if r.status_code!=200:
-        raise Exception("bad status: %i"%r.status_code,r.content)
+        raise ServiceException("bad status: %i"%r.status_code,r.content)
     return r
 
 def get_hk(**uargs):
@@ -210,7 +210,7 @@ def get_hk(**uargs):
         return r.json()
     except:
         print r.content
-        raise Exception(r.content)
+        raise ServiceException(r.content)
 
 
 def get_cat(utc):
@@ -220,19 +220,29 @@ def get_cat(utc):
     try:
         return r.json()
     except:
-        raise Exception(r.content)
+        raise ServiceException(r.content)
 
 
 import time
-def query_web_service(service,url,params={},wait=False):
+def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False):
     s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
-    print s
+
+    if debug:
+        params=dict(params.items()+[('debug','yes')])
+
+    if onlyurl:
+        return s+"?"+urllib.urlencode(params)
 
     while True:
         r = requests.get(s,auth=auth,params=params)
         print r.content
         if r.status_code==200:
-            return r
+            if debug:
+                c=r.json()
+                c['result']=c['result'][:300]
+                return c
+            else:
+                return r
         if not wait:
             try:
                 c=r.json()
