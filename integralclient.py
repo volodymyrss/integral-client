@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
 import os
+from service_exception import *
 
 secret_location=os.environ['HOME']+"/.secret-client"
 
@@ -172,10 +173,14 @@ def get_hk_lc(target,utc,span,**uargs):
 
     r = requests.get(s,auth=auth)
     if r.status_code==202:
-        print r.content
-        raise Waiting(r.content)
+        if find_exception(r.content) is None:
+            try:
+                c=r.json()
+            except:
+                c=r.content
+            raise Waiting(s,c)
     if r.status_code!=200:
-        raise
+        raise Exception("bad status: %i"%r.status_code,r.content)
     return r
 
 def get_hk(**uargs):
@@ -229,6 +234,10 @@ def query_web_service(service,url,params={},wait=False):
         if r.status_code==200:
             return r
         if not wait:
-            raise Waiting(s,r.content)
+            try:
+                c=r.json()
+            except:
+                c=r.content
+            raise Waiting(s,c)
         time.sleep(1.)
 
