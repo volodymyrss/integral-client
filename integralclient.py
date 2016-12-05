@@ -224,8 +224,9 @@ def get_cat(utc):
 
 
 import time
-def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False):
+def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False,json=False,test=False,kind="GET",data={}):
     s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
+    print s
 
     if debug:
         params=dict(params.items()+[('debug','yes')])
@@ -234,15 +235,35 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
         return s+"?"+urllib.urlencode(params)
 
     while True:
-        r = requests.get(s,auth=auth,params=params)
-        print r.content
+        if kind == "GET":
+            r = requests.get(s,auth=auth,params=params)
+        elif kind == "POST":
+            r = requests.post(s,auth=auth,params=params,data=data)
+        else:
+            raise Exception("can not handle request: "+kind)
+        
+        find_exception(r.content)
+
+        if test:
+            print r.status_code
+            return
+            
+       # print r.content
         if r.status_code==200:
             if debug:
                 c=r.json()
-                c['result']=c['result'][:300]
+                if c['result'] is not None:
+                    c['result']=c['result'][:300]
                 return c
             else:
-                return r
+                if json:
+                    try:
+                        return r.json()
+                    except Exception as e:
+                        print e#,r.content
+                        raise
+                else:
+                    return r
         if not wait:
             try:
                 c=r.json()

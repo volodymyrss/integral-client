@@ -1,0 +1,1 @@
+python -c 'import requests, service_exception; from service_exception import *; service_exception.find_exception(requests.get("http://127.0.0.1:4676/integral-hk/api/v1.0/ACS/2016-11-19T18:30:45.000/305/stats"))'
