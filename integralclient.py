@@ -104,7 +104,16 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
     try:
         r=r.json()
 
-        return {'flux':r['enflux'],'phflux':r['phflux'],'response':np.mean(r['response']),'rate':np.mean(r['rate']),'rate_min':np.min(r['rate']),'rate_max':np.max(r['rate'])}
+        return {
+			'flux':r['enflux'],
+			'phflux':r['phflux'],
+			'response':np.mean(r['response']),
+			'response_min':np.min(r['response']),
+			'response_max':np.max(r['response']),
+			'rate':np.mean(r['rate']),
+			'rate_min':np.min(r['rate']),
+			'rate_max':np.max(r['rate']),
+		}
     except Exception as e:
         raise ServiceException("problem with service: "+r.content)
 
@@ -163,7 +172,10 @@ def get_hk_lc(target,utc,span,**uargs):
         args['target'] = "IBIS_VETO"
         raise ServiceException(r.content)
 
-    s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg" % args 
+    print args
+
+    s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg&rebin=%(rebin).5lg" % args 
+    print s
 
     if 'dry' in args and args['dry']:
         return
@@ -185,17 +197,30 @@ def get_hk_lc(target,utc,span,**uargs):
 
 def get_hk(**uargs):
     args=dict(
-            rebin=0
+            rebin=0,
+	    vetofiltermargin=0.02,
+            ra=0,
+            dec=0,
+            t1=0,t2=0,
+            burstfrom=0,burstto=0,
             )
     args.update(uargs)
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
 
+    if 'mode' in uargs:
+        mode=uargs.pop("mode")
+    else:
+        mode="stats"
+
 
     s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
-        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg" % args
+        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg" % args
     print s.replace("stats", "png")
+
+    if mode == "lc":
+        s=s.replace("/stats","")
 
     if 'dry' in args and args['dry']:
         return
@@ -207,6 +232,8 @@ def get_hk(**uargs):
     try:
         if r.status_code!=200:
             raise
+        if mode == "lc":
+            return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
     except:
         print r.content
