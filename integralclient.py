@@ -203,6 +203,7 @@ def get_hk(**uargs):
             dec=0,
             t1=0,t2=0,
             burstfrom=0,burstto=0,
+            greenwich="yes",
             )
     args.update(uargs)
 
@@ -216,7 +217,7 @@ def get_hk(**uargs):
 
 
     s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
-        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg" % args
+        "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg&greenwich=%(greenwich)s" % args
     print s.replace("stats", "png")
 
     if mode == "lc":
