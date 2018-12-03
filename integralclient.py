@@ -1,6 +1,11 @@
 import requests
 import urllib
-import StringIO
+
+try:
+    import StringIO
+except:
+    from io import StringIO
+
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
@@ -53,7 +58,7 @@ def data_analysis_forget(jobkey):
     try:
         return c.json()
     except ServiceException as e:
-        print e
+        print(e)
         return c.content
 
 
@@ -62,13 +67,13 @@ def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax
     theta, phi, lt, model, beta, ampl, alpha, epeak, emin, emax, emax_rate)
 
     if debug:
-        print s
+        print(s)
     r = requests.get(s,auth=auth)
 
     try:
         return r.json()
     except:
-        print r.content
+        print(r.content)
 
 def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
@@ -98,7 +103,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
     #print(url)
 
     if debug:
-        print url
+        print(url)
     r = requests.get(url,auth=auth)
 
     try:
@@ -140,7 +145,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
     )
 
     if debug:
-        print url
+        print(url)
     r = requests.get(url,auth=auth).json()
 
     return r[kind]
@@ -149,12 +154,12 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
 def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
-        print s
+        print(s)
     r = requests.get(s,auth=auth,timeout=300)
     try:
         return r.json()
     except Exception as e:
-        print r.content
+        print(r.content)
         raise ServiceException(e,r.content)
 
 def get_hk_lc(target,utc,span,**uargs):
@@ -172,10 +177,10 @@ def get_hk_lc(target,utc,span,**uargs):
         args['target'] = "IBIS_VETO"
         raise ServiceException(r.content)
 
-    print args
+    print(args)
 
     s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg&rebin=%(rebin).5lg" % args 
-    print s
+    print(s)
 
     if 'dry' in args and args['dry']:
         return
@@ -218,7 +223,7 @@ def get_hk(**uargs):
 
     s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
         "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg&greenwich=%(greenwich)s" % args
-    print s.replace("stats", "png")
+    print(s.replace("stats", "png"))
 
     if mode == "lc":
         s=s.replace("/stats","")
@@ -237,13 +242,13 @@ def get_hk(**uargs):
             return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
     except:
-        print r.content
+        print(r.content)
         raise ServiceException(r.content)
 
 
 def get_cat(utc):
     s = "http://134.158.75.161/cat/grbcatalog/api/v1.1/" + utc
-    print s
+    print(s)
     r = requests.get(s,auth=auth)
     try:
         return r.json()
@@ -254,7 +259,7 @@ def get_cat(utc):
 import time
 def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False,json=False,test=False,kind="GET",data={}):
     s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
-    print s
+    print(s)
 
     if debug:
         params=dict(params.items()+[('debug','yes')])
@@ -273,10 +278,10 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
         find_exception(r.content)
 
         if test:
-            print r.status_code
+            print(r.status_code)
             return
             
-       # print r.content
+       # print(r.content)
         if r.status_code==200:
             if debug:
                 c=r.json()
@@ -288,8 +293,8 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
                     try:
                         return r.json()
                     except Exception as e:
-                        print e#,r.content
-                        raise
+                        print(e)
+                        raise 
                 else:
                     return r
         if not wait:

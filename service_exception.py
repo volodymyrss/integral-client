@@ -41,7 +41,7 @@ def find_exception(r):
         content=r.content
         status=r.status_code
 
-    print content
+    print(content)
 
     try:
         js=json.loads(content)
@@ -52,7 +52,7 @@ def find_exception(r):
         return
 
         
-    print name,[subc.__name__ for subc in all_subclasses(ServiceException)]#
+    print(name,[subc.__name__ for subc in all_subclasses(ServiceException)])
 
     if marker=="ERROR":
         subcs=[subc for subc in all_subclasses(ServiceException) if str(name)==str(subc.__name__)]
