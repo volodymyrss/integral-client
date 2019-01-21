@@ -2,7 +2,7 @@ import requests
 import urllib
 
 try:
-    import StringIO
+    from StringIO import StringIO
 except:
     from io import StringIO
 
@@ -239,11 +239,11 @@ def get_hk(**uargs):
         if r.status_code!=200:
             raise
         if mode == "lc":
-            return np.genfromtxt(StringIO.StringIO(r.content))
+            return np.genfromtxt(StringIO(str(r.content)))
         return r.json()
     except:
         print(r.content)
-        raise ServiceException(r.content)
+        raise ServiceException(str(r.content))
 
 
 def get_cat(utc):
