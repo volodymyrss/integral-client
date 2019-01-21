@@ -15,7 +15,7 @@ for burst in bursts:
     n = burst['name']
     ntotal += 1
 
-    print bystatus, ntotal, len(results)
+    print(bystatus, ntotal, len(results))
 
     r = data_analysis(
         "FluenceForBurst",
@@ -32,7 +32,7 @@ for burst in bursts:
     try:
         a = dict([(a, b) for a, b in r.items() if a not in ['result', 'alljobs']])
     except:
-        print r
+        print(r)
         raise
 
     try:
@@ -51,7 +51,7 @@ for burst in bursts:
     if 'result' in r:
         if r['result'] == "all failed...":
             #         print r
-            print "forgetting returns", data_analysis_forget(r['jobkey'])
+            print("forgetting returns", data_analysis_forget(r['jobkey']))
             bystatus['restarted'] += 1
             continue
 
@@ -68,7 +68,7 @@ for burst in bursts:
     else:
         if r['status'] in ["finished", "failed"]:
             #      print r
-            print "forgetting returns", data_analysis_forget(r['jobkey'])
+            print("forgetting returns", data_analysis_forget(r['jobkey']))
             bystatus['restarted'] += 1
             continue
 
@@ -84,7 +84,7 @@ for burst in bursts:
     if 'result' in rpl:
         if rpl['result'] == "all failed...":
             #        print rpl
-            print "forgetting returns", data_analysis_forget(rpl['jobkey'])
+            print("forgetting returns", data_analysis_forget(rpl['jobkey']))
             bystatus['restarted'] += 1
             continue
 
@@ -107,11 +107,11 @@ for burst in bursts:
     else:
         if rpl['status'] in ["finished", "failed"]:
             #       print rpl
-            print "forgetting returns", data_analysis_forget(rpl['jobkey'])
+            print("forgetting returns", data_analysis_forget(rpl['jobkey']))
             bystatus['restarted'] += 1
             continue
 
-        print "no burst result", rpl['status']
+        print("no burst result", rpl['status'])
         continue
 
 
@@ -127,5 +127,5 @@ for burst in bursts:
          t0_ijd, link, link2])
     completeresults.append([r, rpl])
 
-print bystatus, ntotal, len(results)
+print(bystatus, ntotal, len(results))
 
