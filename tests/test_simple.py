@@ -7,4 +7,10 @@ def test_time():
 
     assert ic.converttime("IJD",2000,"SCWID") == "032800550010"
 
+def test_sc():
+    import integralclient as ic
     assert 'barytime' in ic.get_sc("3000")
+
+def test_response():
+    import integralclient as ic
+    assert len(ic.get_response_map()) > 100

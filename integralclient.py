@@ -33,7 +33,6 @@ def t2str(t):
     if isinstance(t,int):
         return "%i"%t
 
-
 def scwlist(t1, t2, dr="any", debug=True):
     url=timesystem_endpoint+'/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
 
@@ -100,8 +99,6 @@ def converttime(informat,intime,outformat, debug=True):
             else:
                 raise
         
-
-
     
 
 def data_analysis(name, modules, assume):
@@ -110,7 +107,7 @@ def data_analysis(name, modules, assume):
     try:
         return c.json()
     except:
-        return c.text
+        return c.content
 
 
 def data_analysis_forget(jobkey):
@@ -119,7 +116,7 @@ def data_analysis_forget(jobkey):
         return c.json()
     except ServiceException as e:
         print(e)
-        return c.text
+        return c.content
 
 
 def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS",beta=-2.5,model="compton"):
@@ -133,7 +130,7 @@ def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax
     try:
         return r.json()
     except:
-        print(r.text)
+        print(r.content)
 
 def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
@@ -180,11 +177,12 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 			'rate_max':np.max(r['rate']),
 		}
     except Exception as e:
-        raise ServiceException("problem with service: "+r.text)
+        raise ServiceException("problem with service: "+r.content)
 
 
 def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
-    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
+    url="http://cdcihn/response/api/v1.0/"+target+"/response?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
+    #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
@@ -206,7 +204,14 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
 
     if debug:
         print(url)
-    r = requests.get(url,auth=auth).json()
+    
+    try:
+        r = requests.get(url,auth=auth)
+        r = r.json()
+    except Exception as e:
+        print("problem",e)
+        print(r.text)
+        raise
 
     return r[kind]
 
@@ -216,19 +221,12 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
-
-    ntries=10
-    while ntries>0:
-        r = requests.get(s,auth=auth,timeout=300)
-        try:
-            return r.json()
-        except Exception as e:
-            print(r.text)
-            if ntries>0:
-                time.sleep(3)
-                ntries-=1
-                continue
-            raise ServiceException(e,r.text)
+    r = requests.get(s,auth=auth,timeout=300)
+    try:
+        return r.json()
+    except Exception as e:
+        print(r.content)
+        raise ServiceException(e,r.content)
 
 def get_hk_lc(target,utc,span,**uargs):
     args=dict(
@@ -243,7 +241,7 @@ def get_hk_lc(target,utc,span,**uargs):
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
-        raise ServiceException(r.text)
+        raise ServiceException(r.content)
 
     print(args)
 
@@ -258,14 +256,14 @@ def get_hk_lc(target,utc,span,**uargs):
 
     r = requests.get(s,auth=auth)
     if r.status_code==202:
-        if find_exception(r.text) is None:
+        if find_exception(r.content) is None:
             try:
                 c=r.json()
             except:
-                c=r.text
+                c=r.content
             raise Waiting(s,c)
     if r.status_code!=200:
-        raise ServiceException("bad status: %i"%r.status_code,r.text)
+        raise ServiceException("bad status: %i"%r.status_code,r.content)
     return r
 
 def get_hk(**uargs):
@@ -305,13 +303,13 @@ def get_hk(**uargs):
     r = requests.get(s,auth=auth)
     try:
         if r.status_code!=200:
-            raise ServiceException(r.text)
+            raise
         if mode == "lc":
-            return np.genfromtxt(StringIO(r.text))
+            return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
     except:
-        print(r.text)
-        raise ServiceException(r.text)
+        print(r.content)
+        raise ServiceException(r.content)
 
 
 def get_cat(utc):
@@ -321,7 +319,7 @@ def get_cat(utc):
     try:
         return r.json()
     except:
-        raise ServiceException(r.text)
+        raise ServiceException(r.content)
 
 
 import time
@@ -343,12 +341,13 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
         else:
             raise Exception("can not handle request: "+kind)
         
-        find_exception(r.text)
+        find_exception(r.content)
 
         if test:
             print(r.status_code)
             return
             
+       # print r.content
         if r.status_code==200:
             if debug:
                 c=r.json()
@@ -368,7 +367,7 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
             try:
                 c=r.json()
             except:
-                c=r.text
+                c=r.content
             raise Waiting(s,c)
         time.sleep(1.)
 
