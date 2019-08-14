@@ -31,7 +31,8 @@ def converttime(informat,intime,outformat, debug=True):
     if isinstance(intime,int):
         intime="%i"%intime
 
-    url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
+    url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+intime+'/'+outformat
+    #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
     r=requests.get(url,auth=auth)
 
     if debug:
@@ -156,7 +157,8 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
 
 
 def get_sc(utc, ra=0, dec=0, debug=False):
-    s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
+    s = "http://cdcihn/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
+    #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
     r = requests.get(s,auth=auth,timeout=300)
@@ -285,7 +287,7 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
             print(r.status_code)
             return
             
-       # print(r.content)
+       # print r.content
         if r.status_code==200:
             if debug:
                 c=r.json()
