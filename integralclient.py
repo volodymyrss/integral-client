@@ -1,29 +1,30 @@
+from __future__ import print_function
+
 import requests
 import urllib
-
-try:
-    from StringIO import StringIO
-except:
-    from io import StringIO
-
+from io import StringIO
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
 import os
 from service_exception import *
 
-secret_location=os.environ['HOME']+"/.secret-client"
+secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
+secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
+#secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
 
 def get_auth():
-    username="integral"
-    password=open(secret_location).read().strip()
+    #username = "integral"
+    #username = "integral-limited"
+    username = secret_user
+    password = secret
     return requests.auth.HTTPBasicAuth(username, password)
 
 auth=get_auth()
 
 integral_services_server="134.158.75.161"
 
-def converttime(informat,intime,outformat):
+def converttime(informat,intime,outformat, debug=True):
     if isinstance(intime,float):
         intime="%.20lg"%intime
     
@@ -33,8 +34,11 @@ def converttime(informat,intime,outformat):
     url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
     r=requests.get(url,auth=auth)
 
+    if debug:
+        print("url",url)
+
     if r.status_code!=200:
-        raise ServiceException('error converting '+url+'; from timesystem server: '+r.content)
+        raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.content))
 
     if outformat=="ANY":
         try:
@@ -293,8 +297,8 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
                     try:
                         return r.json()
                     except Exception as e:
-                        print(e)
-                        raise 
+                        print(e)#,r.content
+                        raise
                 else:
                     return r
         if not wait:
