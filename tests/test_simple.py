@@ -14,3 +14,7 @@ def test_sc():
 def test_response():
     import integralclient as ic
     assert len(ic.get_response_map()) > 100
+
+def test_gethk():
+    import integralclient as ic
+    ic.get_hk(target="ACS", utc = "2005-06-22T23:58:55.816",  span=300)
