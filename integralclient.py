@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import requests
 import urllib
+import time
 from io import StringIO
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -23,30 +24,84 @@ def get_auth():
 auth=get_auth()
 
 integral_services_server="134.158.75.161"
+timesystem_endpoint = "http://cdcihn/timesystem"
 
-def converttime(informat,intime,outformat, debug=True):
-    if isinstance(intime,float):
-        intime="%.20lg"%intime
+def t2str(t):
+    if isinstance(t,float):
+        return "%.20lg"%t
     
-    if isinstance(intime,int):
-        intime="%i"%intime
+    if isinstance(t,int):
+        return "%i"%t
 
-    url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+intime+'/'+outformat
-    #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
-    r=requests.get(url,auth=auth)
+
+def scwlist(t1, t2, dr="any", debug=True):
+    url=timesystem_endpoint+'/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
+
+    #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
 
     if debug:
         print("url",url)
 
-    if r.status_code!=200:
-        raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.content))
+    ntries_left = 30
 
-    if outformat=="ANY":
+    while ntries_left > 0:
         try:
-            return r.json()
-        except:
-            pass
-    return r.content
+            r=requests.get(url,auth=auth)
+
+            if r.status_code!=200:
+                raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
+
+            try:
+                return r.json()
+            except:
+                return r.text
+
+        except Exception as e:
+            ntries_left -= 1
+
+            if ntries_left > 0:
+                print("retrying timesystem",ntries_left,repr(e))
+                time.sleep(5)
+                continue
+            else:
+                raise
+
+def converttime(informat,intime,outformat, debug=True):
+    #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
+    url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
+    #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
+
+    if debug:
+        print("url",url)
+
+    ntries_left = 30
+
+    while ntries_left > 0:
+        try:
+            r=requests.get(url,auth=auth)
+
+            if r.status_code!=200:
+                raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
+
+            if outformat=="ANY":
+                try:
+                    return r.json()
+                except:
+                    pass
+            return r.text
+
+        except Exception as e:
+            ntries_left -= 1
+
+            if ntries_left > 0:
+                print("retrying timesystem",ntries_left,repr(e))
+                time.sleep(5)
+                continue
+            else:
+                raise
+        
+
+
     
 
 def data_analysis(name, modules, assume):
@@ -55,7 +110,7 @@ def data_analysis(name, modules, assume):
     try:
         return c.json()
     except:
-        return c.content
+        return c.text
 
 
 def data_analysis_forget(jobkey):
@@ -64,7 +119,7 @@ def data_analysis_forget(jobkey):
         return c.json()
     except ServiceException as e:
         print(e)
-        return c.content
+        return c.text
 
 
 def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS",beta=-2.5,model="compton"):
@@ -78,7 +133,7 @@ def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax
     try:
         return r.json()
     except:
-        print(r.content)
+        print(r.text)
 
 def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
@@ -125,7 +180,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 			'rate_max':np.max(r['rate']),
 		}
     except Exception as e:
-        raise ServiceException("problem with service: "+r.content)
+        raise ServiceException("problem with service: "+r.text)
 
 
 def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
@@ -161,12 +216,19 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
-    r = requests.get(s,auth=auth,timeout=300)
-    try:
-        return r.json()
-    except Exception as e:
-        print(r.content)
-        raise ServiceException(e,r.content)
+
+    ntries=10
+    while ntries>0:
+        r = requests.get(s,auth=auth,timeout=300)
+        try:
+            return r.json()
+        except Exception as e:
+            print(r.text)
+            if ntries>0:
+                time.sleep(3)
+                ntries-=1
+                continue
+            raise ServiceException(e,r.text)
 
 def get_hk_lc(target,utc,span,**uargs):
     args=dict(
@@ -181,7 +243,7 @@ def get_hk_lc(target,utc,span,**uargs):
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
-        raise ServiceException(r.content)
+        raise ServiceException(r.text)
 
     print(args)
 
@@ -196,14 +258,14 @@ def get_hk_lc(target,utc,span,**uargs):
 
     r = requests.get(s,auth=auth)
     if r.status_code==202:
-        if find_exception(r.content) is None:
+        if find_exception(r.text) is None:
             try:
                 c=r.json()
             except:
-                c=r.content
+                c=r.text
             raise Waiting(s,c)
     if r.status_code!=200:
-        raise ServiceException("bad status: %i"%r.status_code,r.content)
+        raise ServiceException("bad status: %i"%r.status_code,r.text)
     return r
 
 def get_hk(**uargs):
@@ -243,13 +305,13 @@ def get_hk(**uargs):
     r = requests.get(s,auth=auth)
     try:
         if r.status_code!=200:
-            raise
+            raise ServiceException(r.text)
         if mode == "lc":
-            return np.genfromtxt(StringIO(str(r.content)))
+            return np.genfromtxt(StringIO(r.text))
         return r.json()
     except:
-        print(r.content)
-        raise ServiceException(str(r.content))
+        print(r.text)
+        raise ServiceException(r.text)
 
 
 def get_cat(utc):
@@ -259,7 +321,7 @@ def get_cat(utc):
     try:
         return r.json()
     except:
-        raise ServiceException(r.content)
+        raise ServiceException(r.text)
 
 
 import time
@@ -281,13 +343,12 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
         else:
             raise Exception("can not handle request: "+kind)
         
-        find_exception(r.content)
+        find_exception(r.text)
 
         if test:
             print(r.status_code)
             return
             
-       # print r.content
         if r.status_code==200:
             if debug:
                 c=r.json()
@@ -307,7 +368,7 @@ def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False
             try:
                 c=r.json()
             except:
-                c=r.content
+                c=r.text
             raise Waiting(s,c)
         time.sleep(1.)
 
