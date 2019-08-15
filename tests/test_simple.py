@@ -13,8 +13,20 @@ def test_sc():
 
 def test_response():
     import integralclient as ic
-    assert len(ic.get_response_map()) > 100
+    r = ic.get_response_map()
+    assert len(r) > 100
+
+    print(r)
+    
+    r = ic.get_response(0,0)
+    print(r)
 
 def test_gethk():
     import integralclient as ic
-    ic.get_hk(target="ACS", utc = "2005-06-22T23:58:55.816",  span=300)
+    import random
+
+    ijd = list(map(float, ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD").split(":")))
+    print("ijd",ijd)
+
+    
+    ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True)

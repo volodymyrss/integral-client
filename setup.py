@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
         name='integral-client',
-        version='1.0.2',
+        version='1.0.4',
         py_modules= ['integralclient','ddaclient','service_exception'],
         url="http://odahub.io",
         package_data     = {

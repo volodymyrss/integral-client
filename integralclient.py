@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import requests
 import urllib
+import time
 from io import StringIO
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -25,12 +26,26 @@ auth=get_auth()
 integral_services_server="134.158.75.161"
 timesystem_endpoint = "http://cdcihn/timesystem"
 
+
+def wait(f,timeout=5,ntries=30):
+    ntries_left = ntries
+    while ntries_left > 0:
+        try:
+            return f()
+        except Exception as e: # or service?
+            print("service exception", repr(e), "tries left", ntries_left)
+            ntries_left-=1
+            time.sleep(timeout)
+
 def t2str(t):
     if isinstance(t,float):
         return "%.20lg"%t
     
     if isinstance(t,int):
         return "%i"%t
+    
+    if isinstance(t,str):
+        return t
 
 def scwlist(t1, t2, dr="any", debug=True):
     url=timesystem_endpoint+'/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
@@ -100,68 +115,50 @@ def converttime(informat,intime,outformat, debug=True):
         
     
 
-def data_analysis(name, modules, assume):
-    c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/" + name,
-                     params=dict(modules=modules, assume=assume))
-    try:
-        return c.json()
-    except:
-        return c.content
 
 
-def data_analysis_forget(jobkey):
-    c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/jobs/forget/" + jobkey)
-    try:
-        return c.json()
-    except ServiceException as e:
-        print(e)
-        return c.content
+def get_response(*args, **kwargs):
+    if kwargs.get('wait', True):
+        return wait(lambda :get_response(*args,**{**kwargs, 'wait':False}))
+    
+    theta, phi = args 
 
+    default_kwargs= dict(
+        radius=0.1,
+        alpha=-1,
+        epeak=600,
+        emin=75,
+        emax=2000,
+        emax_rate=20000,
+        lt=75,
+        ampl=1,
+        debug=False,
+        target="ACS",
+        model="compton",
+        width=1,
+        beta=-2.5,
+        wait=True,
+        theta=theta,
+        phi=phi,
+    )
 
-def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS",beta=-2.5,model="compton"):
-    s = "http://134.158.75.161/integral/api/v1.0/spiresponse/direction/%.5lg/%.5lg?lt=%.5lg&model=%s&beta=%.5lg&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
-    theta, phi, lt, model, beta, ampl, alpha, epeak, emin, emax, emax_rate)
+    kwargs = {**default_kwargs, **kwargs}
+    kwargs['lt'] = str(kwargs['lt'])
 
-    if debug:
-        print(s)
-    r = requests.get(s,auth=auth)
-
-    try:
-        return r.json()
-    except:
-        print(r.content)
-
-def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
     #theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
 
 
     #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
-    url="http://cdcihn/response/api/v1.0/"+target+"/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
+    url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url += "&emax=%(emax).5lg"
 
-    url = url % dict(
-        lt=str(lt),
-        theta=theta,
-        phi=phi,
-        radius=radius,
-        alpha=alpha,
-        epeak=epeak,
-        model=model,
-        beta=beta,
-        width=width,
-        ampl=ampl,
-        emin=emin,
-        emax=emax,
-        emax_rate=emax_rate
-    )
+    url = url % kwargs
 
     print(url)
 
-    if debug:
-        print(url)
     r = requests.get(url,auth=auth)
 
     try:
@@ -181,28 +178,23 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
         raise ServiceException("problem with service: "+r.content)
 
 
-def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
-    url="http://cdcihn/response/api/v1.0/"+target+"/response?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
+def get_response_map(**kwargs):
+    if kwargs.get('wait', True):
+        return wait(lambda :get_response_map(**{**kwargs, 'wait':False}))
+
+    default_kwargs = dict(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5)
+
+    kwargs = {**default_kwargs, **kwargs}
+    kwargs['lt'] = str(kwargs['lt'])
+
+    url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
     #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
-   # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
     url+="&emax_rate=%(emax_rate).5lg"
     
-    lt=str(lt)
 
-    url = url % dict(
-        lt=lt,
-        model=model,
-        alpha=alpha,
-        beta=beta,
-        epeak=epeak,
-        ampl=ampl,
-        emin=emin,
-        emax=emax,
-        emax_rate=emax_rate
-    )
-
+    url = url % kwargs
     print(url)
     
     try:
@@ -213,7 +205,7 @@ def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, l
         print(r.text)
         raise
 
-    return r[kind]
+    return r[kwargs['kind']]
 
 
 def get_sc(utc, ra=0, dec=0, debug=False):
@@ -228,45 +220,11 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         print(r.content)
         raise ServiceException(e,r.content)
 
-def get_hk_lc(target,utc,span,**uargs):
-    args=dict(
-            rebin=0,
-            api="v1.0",
-            )
-    args.update(uargs)
-
-    args['target']=target
-    args['utc']=utc
-    args['span']=span
-
-    if args['target']=="VETO":
-        args['target'] = "IBIS_VETO"
-        raise ServiceException(r.content)
-
-    print(args)
-
-    s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg&rebin=%(rebin).5lg" % args 
-    print(s)
-
-    if 'dry' in args and args['dry']:
-        return
-
-    if 'onlyprint' in args and args['onlyprint']:
-        return
-
-    r = requests.get(s,auth=auth)
-    if r.status_code==202:
-        if find_exception(r.content) is None:
-            try:
-                c=r.json()
-            except:
-                c=r.content
-            raise Waiting(s,c)
-    if r.status_code!=200:
-        raise ServiceException("bad status: %i"%r.status_code,r.content)
-    return r
 
 def get_hk(**uargs):
+    if uargs.get("wait",False):
+        return wait(lambda :get_hk(**{**uargs, 'wait': False}))
+
     args=dict(
             rebin=0,
 	    vetofiltermargin=0.02,
@@ -321,53 +279,4 @@ def get_cat(utc):
     except:
         raise ServiceException(r.content)
 
-
-import time
-def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False,json=False,test=False,kind="GET",data={}):
-    s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
-    print(s)
-
-    if debug:
-        params=dict(params.items()+[('debug','yes')])
-
-    if onlyurl:
-        return s+"?"+urllib.urlencode(params)
-
-    while True:
-        if kind == "GET":
-            r = requests.get(s,auth=auth,params=params)
-        elif kind == "POST":
-            r = requests.post(s,auth=auth,params=params,data=data)
-        else:
-            raise Exception("can not handle request: "+kind)
-        
-        find_exception(r.content)
-
-        if test:
-            print(r.status_code)
-            return
-            
-       # print r.content
-        if r.status_code==200:
-            if debug:
-                c=r.json()
-                if c['result'] is not None:
-                    c['result']=c['result'][:300]
-                return c
-            else:
-                if json:
-                    try:
-                        return r.json()
-                    except Exception as e:
-                        print(e)#,r.content
-                        raise
-                else:
-                    return r
-        if not wait:
-            try:
-                c=r.json()
-            except:
-                c=r.content
-            raise Waiting(s,c)
-        time.sleep(1.)
 
