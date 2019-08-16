@@ -104,6 +104,9 @@ def converttime(informat,intime,outformat, debug=True):
             return r.text
 
         except Exception as e:
+            if 'is close' in repr(e):
+                raise
+                
             ntries_left -= 1
 
             if ntries_left > 0:
