@@ -5,8 +5,7 @@ class ServiceException(Exception):
         try:
             return json.dumps(("ERROR",self.__class__.__name__,self.args))
         except:
-            #raise
-            return json.dumps(("ERROR",self.__class__.__name__,map(repr,self.args)))
+            return json.dumps(("ERROR",self.__class__.__name__,list(map(repr,self.args))))
 
 class PermanentException(ServiceException):
     pass
