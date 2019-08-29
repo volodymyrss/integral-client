@@ -264,7 +264,7 @@ def get_hk(**uargs):
     r = requests.get(s,auth=auth)
     try:
         if r.status_code!=200:
-            raise
+            raise Exception("got %i ( != 200 ) HTTP response from service; response: %s"%(r.status_code, r.text))
         if mode == "lc":
             return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
