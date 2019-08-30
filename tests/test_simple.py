@@ -9,7 +9,8 @@ def test_time():
 
 def test_sc():
     import integralclient as ic
-    assert 'barytime' in ic.get_sc("3000")
+    import random
+    assert 'barytime' in ic.get_sc("%.10lg"%random.uniform(2000,7000))
 
 def test_response():
     import integralclient as ic
