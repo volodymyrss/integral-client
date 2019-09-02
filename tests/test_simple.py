@@ -43,6 +43,6 @@ def test_gethk_binevents():
     print("ijd",ijd)
 
     
-    lc = ic.get_hk(target="ISGRI", utc=ijd[0],  span=300, wait=True)
+    lc = ic.get_hk(target="isgri", utc=ijd[0],  span=300, wait=True)
 
     print(lc)
