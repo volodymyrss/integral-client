@@ -242,7 +242,7 @@ def get_hk_binevents(**uargs):
     c = np.array(r['lc']['counts'])
     m = c > np.quantile(c, 0.1)
 
-    r['count limit 3 sigma'] = np.std( c[m] )  * 3
+    r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
 
     return r
 

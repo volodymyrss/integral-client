@@ -33,6 +33,8 @@ def test_gethk():
     lc = ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True)
 
     print(lc)
+    
+    assert 'count limit 3 sigma' in lc['lc']
 
 
 def test_gethk_binevents():
@@ -47,4 +49,4 @@ def test_gethk_binevents():
 
     print(lc)
 
-    assert 'count limit 3 sigma' in lc
+    assert 'count limit 3 sigma' in lc['lc']
