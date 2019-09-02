@@ -224,23 +224,46 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         raise ServiceException(e,r.content)
 
 
+import oda
+
+def get_hk_binevents(**uargs):
+    t0_utc = converttime("ANY", uargs['utc'], "UTC")
+
+    r = oda.evaluate("odahub","integral-multidetector","binevents",
+                 t0_utc=t0_utc,
+                 span_s=uargs['span'],
+                 tbin_s=max(uargs['rebin'], 0.01),
+                 instrument=uargs['target'].lower(),
+                 emin=uargs['emin'],
+                 emax=uargs['emax'])
+
+    print(r.keys())
+
+    return r['lc']
+
+
 def get_hk(**uargs):
     if uargs.get("wait",False):
         return wait(lambda :get_hk(**{**uargs, 'wait': False}))
 
     args=dict(
-            rebin=0,
+            rebin=1,
 	    vetofiltermargin=0.02,
             ra=0,
             dec=0,
             t1=0,t2=0,
             burstfrom=0,burstto=0,
             greenwich="yes",
+            emin=25,
+            emax=80,
             )
     args.update(uargs)
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
+
+    if args['target'] in ["ISGRI", "SPI"]:
+        return get_hk_binevents(**args)
 
     if 'mode' in uargs:
         mode=uargs.pop("mode")
@@ -248,8 +271,9 @@ def get_hk(**uargs):
         mode="stats"
 
 
-    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
+    s = "http://lal.odahub.io/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
         "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg&greenwich=%(greenwich)s" % args
+
     print(s.replace("stats", "png"))
 
     if mode == "lc":

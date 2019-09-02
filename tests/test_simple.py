@@ -30,4 +30,19 @@ def test_gethk():
     print("ijd",ijd)
 
     
-    ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True)
+    lc = ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True)
+
+    print(lc)
+
+
+def test_gethk_binevents():
+    import integralclient as ic
+    import random
+
+    ijd = list(map(float, ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD").split(":")))
+    print("ijd",ijd)
+
+    
+    lc = ic.get_hk(target="ISGRI", utc=ijd[0],  span=300, wait=True)
+
+    print(lc)
