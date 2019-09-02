@@ -239,7 +239,12 @@ def get_hk_binevents(**uargs):
 
     print(r.keys())
 
-    return r['lc']
+    c = np.array(r['lc']['counts'])
+    m = c > np.quantile(c, 0.1)
+
+    r['count limit 3 sigma'] = np.std( c[m] )  * 3
+
+    return r
 
 
 def get_hk(**uargs):
@@ -262,7 +267,7 @@ def get_hk(**uargs):
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
 
-    if args['target'] in ["ISGRI", "SPI"]:
+    if args['target'].upper() in ["ISGRI", "SPI"]:
         return get_hk_binevents(**args)
 
     if 'mode' in uargs:

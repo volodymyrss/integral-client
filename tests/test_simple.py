@@ -46,3 +46,5 @@ def test_gethk_binevents():
     lc = ic.get_hk(target="isgri", utc=ijd[0],  span=300, wait=True)
 
     print(lc)
+
+    assert 'count limit 3 sigma' in lc
