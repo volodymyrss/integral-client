@@ -35,7 +35,10 @@ def test_gethk():
     print(lc)
     
     assert 'count limit 3 sigma' in lc['lc']
+    assert 'excvar' in lc['lc']
 
+    assert lc['lc']['excvar'] < 1.5
+    assert lc['lc']['excvar'] > 0.9
 
 def test_gethk_binevents():
     import integralclient as ic
@@ -45,8 +48,12 @@ def test_gethk_binevents():
     print("ijd",ijd)
 
     
-    lc = ic.get_hk(target="isgri", utc=ijd[0],  span=300, wait=True)
+    lc = ic.get_hk(target="isgri", utc=ijd[0] + 1000./3600./24,  span=300, wait=True)
 
     print(lc)
 
     assert 'count limit 3 sigma' in lc['lc']
+    assert 'excvar' in lc['lc']
+
+    assert lc['lc']['excvar'] < 1.5
+    assert lc['lc']['excvar'] > 0.9
