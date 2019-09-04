@@ -10,16 +10,20 @@ import numpy as np
 import os
 from service_exception import *
 
-secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
-secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
-#secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
+try:
+    secret = (
+                open(os.environ['HOME']+"/.secret-client-user").read().strip(),
+                os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip()),
+            )
+except:
+    secret = None
 
 def get_auth():
-    #username = "integral"
-    #username = "integral-limited"
-    username = secret_user
-    password = secret
-    return requests.auth.HTTPBasicAuth(username, password)
+    if secret is None:
+        return None
+    else:
+        username, password = secret
+        return requests.auth.HTTPBasicAuth(username, password)
 
 auth=get_auth()
 
@@ -80,7 +84,6 @@ def scwlist(t1, t2, dr="any", debug=True):
                 raise
 
 def converttime(informat,intime,outformat, debug=True):
-    #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
     url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
     #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
 
@@ -148,11 +151,8 @@ def get_response(*args, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     kwargs['lt'] = str(kwargs['lt'])
 
-    #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
-    #theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
 
 
-    #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
     url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
@@ -191,7 +191,6 @@ def get_response_map(**kwargs):
     kwargs['lt'] = str(kwargs['lt'])
 
     url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
-    #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
     url+="&emax_rate=%(emax_rate).5lg"
@@ -213,7 +212,6 @@ def get_response_map(**kwargs):
 
 def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://cdcihn/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
-    #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
     r = requests.get(s,auth=auth,timeout=300)
@@ -244,6 +242,7 @@ def get_hk_binevents(**uargs):
 
     r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
     r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
+    r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
 
     return r
 
