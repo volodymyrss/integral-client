@@ -10,7 +10,7 @@ if {'pytest', 'test', 'ptr'}.intersection(sys.argv):
 setup(description="integral client",
       long_description=open('README.md').read(),
       version_config=dict(
-        version_format='{tag}.dev{commitcount}+{gitsha}', 
+        version_format='{tag}.dev{sha}', 
         starting_version="0.1.0",
       ),
       setup_requires=setup_requires)
