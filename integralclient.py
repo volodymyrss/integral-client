@@ -148,6 +148,7 @@ def get_response(*args, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     kwargs['lt'] = str(kwargs['lt'])
 
+def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5, kind="summary"):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
     #theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
 
@@ -166,6 +167,9 @@ def get_response(*args, **kwargs):
 
     try:
         r=r.json()
+
+        if kind == "profile":
+            return r
 
         return {
 			'flux':r['enflux'],
