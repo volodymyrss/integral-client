@@ -224,22 +224,25 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         raise ServiceException(e,r.content)
 
 
-import oda
+try:
+    import oda
 
-def get_hk_binevents(**uargs):
-    t0_utc = converttime("ANY", uargs['utc'], "UTC")
+    def get_hk_binevents(**uargs):
+        t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-    r = oda.evaluate("odahub","integral-multidetector","binevents",
-                 t0_utc=t0_utc,
-                 span_s=uargs['span'],
-                 tbin_s=max(uargs['rebin'], 0.01),
-                 instrument=uargs['target'].lower(),
-                 emin=uargs['emin'],
-                 emax=uargs['emax'])
+        r = oda.evaluate("odahub","integral-multidetector","binevents",
+                     t0_utc=t0_utc,
+                     span_s=uargs['span'],
+                     tbin_s=max(uargs['rebin'], 0.01),
+                     instrument=uargs['target'].lower(),
+                     emin=uargs['emin'],
+                     emax=uargs['emax'])
 
-    print(r.keys())
+        print(r.keys())
 
-    return r['lc']
+        return r['lc']
+except Exception as e:
+    print("failed to import oda")
 
 
 def get_hk(**uargs):
