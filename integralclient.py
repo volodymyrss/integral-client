@@ -9,6 +9,7 @@ from astropy import units as u
 import numpy as np
 import os
 from service_exception import *
+import io
 
 secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
 secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
@@ -303,6 +304,12 @@ def get_hk(**uargs):
         print(r.content)
         raise ServiceException(r.content)
 
+
+def get_hk_genlc(target, t0, dt_s):
+    r = requests.get("http://cdcihn/integralhk/api/v1.0/genlc/%s/%.20lg/%.10lg"%(target, t0, dt_s))
+    d = np.genfromtxt(io.StringIO(r.text), skip_header=5, names=("t_ijd", "t_rel", "counts", "t_since_midnight") )
+
+    return d
 
 def get_cat(utc):
     s = "http://134.158.75.161/cat/grbcatalog/api/v1.1/" + utc

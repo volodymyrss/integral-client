@@ -46,3 +46,15 @@ def test_gethk_binevents():
     lc = ic.get_hk(target="isgri", utc=ijd[0],  span=300, wait=True)
 
     print(lc)
+
+def test_get_hk_genlc():
+    import integralclient as ic
+    import random
+
+    ijd = list(map(float, ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD").split(":")))
+    print("ijd",ijd)
+
+    
+    lc = ic.get_hk_genlc("ACS", ijd[0], 30)
+
+    print(lc)
