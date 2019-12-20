@@ -11,16 +11,20 @@ import os
 from service_exception import *
 import io
 
-secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
-secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
-#secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
 
 def get_auth():
-    #username = "integral"
-    #username = "integral-limited"
-    username = secret_user
-    password = secret
-    return requests.auth.HTTPBasicAuth(username, password)
+    try:
+        secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
+        secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
+
+        #secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
+        #username = "integral"
+        #username = "integral-limited"
+        username = secret_user
+        password = secret
+        return requests.auth.HTTPBasicAuth(username, password)
+    except:
+        return None
 
 auth=get_auth()
 
@@ -60,7 +64,7 @@ def scwlist(t1, t2, dr="any", debug=True):
 
     while ntries_left > 0:
         try:
-            r=requests.get(url,auth=auth)
+            r=requests.get(url)
 
             if r.status_code!=200:
                 raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
@@ -92,7 +96,7 @@ def converttime(informat,intime,outformat, debug=True):
 
     while ntries_left > 0:
         try:
-            r=requests.get(url,auth=auth)
+            r=requests.get(url)
 
             if r.status_code!=200:
                 raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
@@ -164,7 +168,7 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 
     print(url)
 
-    r = requests.get(url,auth=auth)
+    r = requests.get(url)
 
     try:
         r=r.json()
@@ -206,7 +210,7 @@ def get_response_map(**kwargs):
     print(url)
     
     try:
-        r = requests.get(url,auth=auth)
+        r = requests.get(url)
         r = r.json()
     except Exception as e:
         print("problem",e)
@@ -221,7 +225,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
     #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
-    r = requests.get(s,auth=auth,timeout=300)
+    r = requests.get(s,timeout=300)
     try:
         return r.json()
     except Exception as e:
