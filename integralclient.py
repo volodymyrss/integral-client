@@ -28,8 +28,24 @@ def get_auth():
 
 auth=get_auth()
 
-integral_services_server="134.158.75.161"
-timesystem_endpoint = "http://cdcihn/timesystem"
+#integral_services_server="134.158.75.161"
+
+def detect_timesystem_endpoint():
+    #https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/timesystem/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM
+
+    for endpoint in [
+        "http://cdcihn/timesystem",
+        "https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/timesystem/",
+                ]:
+        r = requests.get(endpoint+"/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM")
+        if r.status_code == 200:
+            print("selecting timesystem endpoint", endpoint)
+            return endpoint
+
+    raise Exception("no suitable timesystem endpoint")
+    
+
+timesystem_endpoint = detect_timesystem_endpoint()
 
 
 def wait(f,timeout=5,ntries=30):
@@ -72,7 +88,9 @@ def scwlist(t1, t2, dr="any", debug=True):
             try:
                 return r.json()
             except:
-                return r.text
+                if debug:
+                    print("got string", r.text)
+                return r.text.strip(r"\n").strip("\"")
 
         except Exception as e:
             ntries_left -= 1
@@ -86,7 +104,7 @@ def scwlist(t1, t2, dr="any", debug=True):
 
 def converttime(informat,intime,outformat, debug=True):
     #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
-    url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
+    url=timesystem_endpoint+'/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
     #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
 
     if debug:
@@ -106,7 +124,7 @@ def converttime(informat,intime,outformat, debug=True):
                     return r.json()
                 except:
                     pass
-            return r.text
+            return r.text.strip().strip("\"")
 
         except Exception as e:
             if 'is close' in repr(e):
