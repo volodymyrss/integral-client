@@ -34,13 +34,17 @@ def detect_timesystem_endpoint():
     #https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/timesystem/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM
 
     for endpoint in [
-        "http://cdcihn/timesystem",
+ #       "http://cdcihn/timesystem",
         "https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/timesystem/",
                 ]:
-        r = requests.get(endpoint+"/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM")
-        if r.status_code == 200:
-            print("selecting timesystem endpoint", endpoint)
-            return endpoint
+        try:
+            r = requests.get(endpoint+"/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM")
+            if r.status_code == 200:
+                print("selecting timesystem endpoint", endpoint)
+                return endpoint
+            print("failed to fetch endpoint", endpoint, "response", r, r.text)
+        except Exception as e:
+            print("failed to fetch endpoint", endpoint, "exception", e)
 
     raise Exception("no suitable timesystem endpoint")
     
