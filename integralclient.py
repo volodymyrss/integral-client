@@ -11,6 +11,11 @@ import os
 from service_exception import *
 import io
 
+import click
+
+@click.group()
+def cli():
+    pass
 
 def get_auth():
     try:
@@ -347,3 +352,5 @@ def get_cat(utc):
         raise ServiceException(r.content)
 
 
+if __name__ == "__main__":
+    cli()
