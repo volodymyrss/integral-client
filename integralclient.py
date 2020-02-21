@@ -124,7 +124,9 @@ def _converttime(informat, intime, outformat, debug=True, j=False):
     r = converttime(informat,intime,outformat, debug=debug)
 
     if j:
-        logging.info(json.dumps(r))
+        print(json.dumps(r))
+    else:
+        logging.info(r)
     
 
 def converttime(informat,intime,outformat, debug=True):
