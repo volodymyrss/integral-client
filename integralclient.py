@@ -111,6 +111,15 @@ def scwlist(t1, t2, dr="any", debug=True):
             else:
                 raise
 
+@cli.command("converttime")
+@cli.arguement("informat")
+@cli.arguement("intime")
+@cli.arguement("outformat")
+@cli.option("-d","--debug")
+def _converttime(informat,intime,outformat, debug=True):
+    converttime(informat,intime,outformat, debug=debug)
+    
+
 def converttime(informat,intime,outformat, debug=True):
     #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
     url=timesystem_endpoint+'/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
