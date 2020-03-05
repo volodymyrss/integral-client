@@ -2,6 +2,8 @@
 
 def test_time():
     import integralclient as ic
+    
+    assert ic.converttime("IJD",2000,"ANY")['UTC'] == "2005-06-22T23:58:55.816"
 
     assert ic.converttime("IJD",2000,"UTC") == "2005-06-22T23:58:55.816"
 
@@ -59,3 +61,15 @@ def test_gethk_binevents():
 
     assert lc['lc']['excvar'] < 1.5
     assert lc['lc']['excvar'] > 0.8
+
+def test_get_hk_genlc():
+    import integralclient as ic
+    import random
+
+    ijd = list(map(float, ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD").split(":")))
+    print("ijd",ijd)
+
+    
+    lc = ic.get_hk_genlc("ACS", ijd[0], 30)
+
+    print(lc)

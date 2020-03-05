@@ -9,26 +9,55 @@ from astropy import units as u
 import numpy as np
 import os
 from service_exception import *
+import io
+import logging
 
-try:
-    secret = (
-                open(os.environ['HOME']+"/.secret-client-user").read().strip(),
-                os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip()),
-            )
-except:
-    secret = None
+logging.basicConfig()
+
+import click
+
+@click.group()
+def cli():
+    pass
 
 def get_auth():
-    if secret is None:
-        return None
-    else:
-        username, password = secret
+    try:
+        secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
+        secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
+
+        #secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
+        #username = "integral"
+        #username = "integral-limited"
+        username = secret_user
+        password = secret
         return requests.auth.HTTPBasicAuth(username, password)
+    except:
+        return None
 
 auth=get_auth()
 
-integral_services_server="134.158.75.161"
-timesystem_endpoint = "http://cdcihn/timesystem"
+#integral_services_server="134.158.75.161"
+
+def detect_gw_endpoint():
+    #https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/timesystem/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM
+
+    for endpoint in [
+ #       "http://cdcihn/timesystem",
+        "https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/",
+                ]:
+        try:
+            r = requests.get(endpoint+"/timesystem/api/v1.0/converttime/UTC/2009-11-11T11:11:11/REVNUM")
+            if r.status_code == 200:
+                logging.info("selecting timesystem endpoint %s", endpoint)
+                return endpoint
+            logging.info("failed to fetch endpoint %s response %s %s", endpoint, r, r.text)
+        except Exception as e:
+            logging.info("failed to fetch endpoint %s exception %s", endpoint, e)
+
+    raise Exception("no suitable gw endpoint")
+    
+
+gw_endpoint = detect_gw_endpoint()
 
 
 def wait(f,timeout=5,ntries=30):
@@ -37,7 +66,7 @@ def wait(f,timeout=5,ntries=30):
         try:
             return f()
         except Exception as e: # or service?
-            print("service exception", repr(e), "tries left", ntries_left)
+            logging.info("service exception %s tries left %i", repr(e),  ntries_left)
             ntries_left-=1
             time.sleep(timeout)
 
@@ -52,18 +81,18 @@ def t2str(t):
         return t
 
 def scwlist(t1, t2, dr="any", debug=True):
-    url=timesystem_endpoint+'/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
+    url=gw_endpoint+'/timesystem/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
 
     #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
 
     if debug:
-        print("url",url)
+        logging.info("url %s",url)
 
     ntries_left = 30
 
     while ntries_left > 0:
         try:
-            r=requests.get(url,auth=auth)
+            r=requests.get(url)
 
             if r.status_code!=200:
                 raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
@@ -71,30 +100,48 @@ def scwlist(t1, t2, dr="any", debug=True):
             try:
                 return r.json()
             except:
-                return r.text
+                if debug:
+                    logging.info("got string %s", r.text)
+                return r.text.strip(r"\n").strip("\"")
 
         except Exception as e:
             ntries_left -= 1
 
             if ntries_left > 0:
-                print("retrying timesystem",ntries_left,repr(e))
+                logging.info("retrying timesystem %i %s",ntries_left,repr(e))
                 time.sleep(5)
                 continue
             else:
                 raise
 
+@cli.command("converttime")
+@click.argument("informat")
+@click.argument("intime")
+@click.argument("outformat")
+@click.option("-d", "--debug", is_flag=True)
+@click.option("-j", default=False, is_flag=True)
+def _converttime(informat, intime, outformat, debug=True, j=False):
+    r = converttime(informat,intime,outformat, debug=debug)
+
+    if j:
+        print(json.dumps(r))
+    else:
+        logging.info(r)
+    
+
 def converttime(informat,intime,outformat, debug=True):
-    url='http://cdcihn/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
+    #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
+    url=gw_endpoint+'/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
     #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
 
     if debug:
-        print("url",url)
+        logging.info("url %s",url)
 
     ntries_left = 30
 
     while ntries_left > 0:
         try:
-            r=requests.get(url,auth=auth)
+            r=requests.get(url)
 
             if r.status_code!=200:
                 raise ServiceException('error converting '+url+'; from timesystem server: '+str(r.text))
@@ -104,7 +151,7 @@ def converttime(informat,intime,outformat, debug=True):
                     return r.json()
                 except:
                     pass
-            return r.text
+            return r.text.strip().strip("\"")
 
         except Exception as e:
             if 'is close' in repr(e):
@@ -113,7 +160,7 @@ def converttime(informat,intime,outformat, debug=True):
             ntries_left -= 1
 
             if ntries_left > 0:
-                print("retrying timesystem",ntries_left,repr(e))
+                logging.info("retrying timesystem %i %s",ntries_left,repr(e))
                 time.sleep(5)
                 continue
             else:
@@ -152,7 +199,6 @@ def get_response(*args, **kwargs):
     kwargs['lt'] = str(kwargs['lt'])
 
 
-
     url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
@@ -160,12 +206,15 @@ def get_response(*args, **kwargs):
 
     url = url % kwargs
 
-    print(url)
+    logging.info(url)
 
-    r = requests.get(url,auth=auth)
+    r = requests.get(url)
 
     try:
         r=r.json()
+
+    #    if kind == "profile":
+    #        return r
 
         return {
 			'flux':r['enflux'],
@@ -178,7 +227,7 @@ def get_response(*args, **kwargs):
 			'rate_max':np.max(r['rate']),
 		}
     except Exception as e:
-        raise ServiceException("problem with service: "+r.content)
+        raise ServiceException("problem with service: "+repr(e)+"; "+repr(r)+" "+getattr(r,'text',"?"))
 
 
 def get_response_map(**kwargs):
@@ -197,14 +246,14 @@ def get_response_map(**kwargs):
     
 
     url = url % kwargs
-    print(url)
+    logging.info(url)
     
     try:
-        r = requests.get(url,auth=auth)
+        r = requests.get(url)
         r = r.json()
     except Exception as e:
-        print("problem",e)
-        print(r.text)
+        logging.info("problem %s",e)
+        logging.info(r.text)
         raise
 
     return r[kwargs['kind']]
@@ -213,38 +262,45 @@ def get_response_map(**kwargs):
 def get_sc(utc, ra=0, dec=0, debug=False):
     s = "http://cdcihn/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
-        print(s)
-    r = requests.get(s,auth=auth,timeout=300)
+        logging.info(s)
+    r = requests.get(s,timeout=300)
     try:
         return r.json()
     except Exception as e:
-        print(r.content)
+        logging.info(r.content)
         raise ServiceException(e,r.content)
 
 
-import oda
+try:
+    import oda
 
-def get_hk_binevents(**uargs):
-    t0_utc = converttime("ANY", uargs['utc'], "UTC")
+    def get_hk_binevents(**uargs):
+        t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-    r = oda.evaluate("odahub","integral-multidetector","binevents",
-                 t0_utc=t0_utc,
-                 span_s=uargs['span'],
-                 tbin_s=max(uargs['rebin'], 0.01),
-                 instrument=uargs['target'].lower(),
-                 emin=uargs['emin'],
-                 emax=uargs['emax'])
+        r = oda.evaluate("odahub","integral-multidetector","binevents",
+                     t0_utc=t0_utc,
+                     span_s=uargs['span'],
+                     tbin_s=max(uargs['rebin'], 0.01),
+                     instrument=uargs['target'].lower(),
+                     emin=uargs['emin'],
+                     emax=uargs['emax'])
 
-    print(r.keys())
+        logging.info(r.keys())
 
-    c = np.array(r['lc']['counts'])
-    m = c > np.quantile(c, 0.1)
+#<<<<<<< HEAD
+        c = np.array(r['lc']['counts'])
+        m = c > np.quantile(c, 0.1)
 
-    r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
-    r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
-    r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
+        r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
+        r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
+        r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
 
-    return r
+        return r
+
+#        return r['lc']
+except Exception as e:
+    logging.info("failed to import oda")
+#>>>>>>> b384d7710d79ba334409dbe3036e167e70fc5f21
 
 
 def get_hk(**uargs):
@@ -279,7 +335,7 @@ def get_hk(**uargs):
     s = "http://lal.odahub.io/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
         "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg&greenwich=%(greenwich)s" % args
 
-    print(s.replace("stats", "png"))
+    logging.info(s.replace("stats", "png"))
 
     if mode == "lc":
         s=s.replace("/stats","")
@@ -298,13 +354,28 @@ def get_hk(**uargs):
             return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
     except:
-        print(r.content)
+        logging.info(r.content)
         raise ServiceException(r.content)
 
 
+def get_hk_genlc(target, t0, dt_s):
+    url = gw_endpoint+"/integralhk/api/v1.0/genlc/%s/%.20lg/%.10lg"%(target, t0, dt_s)
+
+    r = requests.get(url)
+
+    print(url)
+
+    text = r.text.strip().strip("\"").replace("\\n","\n")
+    print(text)
+
+
+    d = np.genfromtxt(io.StringIO(text), skip_header=5, names=("t_ijd", "t_rel", "counts", "t_since_midnight") )
+
+    return d
+
 def get_cat(utc):
     s = "http://134.158.75.161/cat/grbcatalog/api/v1.1/" + utc
-    print(s)
+    logging.info(s)
     r = requests.get(s,auth=auth)
     try:
         return r.json()
@@ -312,3 +383,5 @@ def get_cat(utc):
         raise ServiceException(r.content)
 
 
+if __name__ == "__main__":
+    cli()
