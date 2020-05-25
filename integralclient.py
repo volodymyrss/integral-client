@@ -129,10 +129,15 @@ def _converttime(informat, intime, outformat, debug=True, j=False):
         logging.info(r)
     
 
-def converttime(informat,intime,outformat, debug=True):
+def converttime(informat, intime, outformat, debug=True):
+    if intime == "now":
+        informat="UTC"
+        intime=time.strftime("%Y-%m-%dT%H:%M:%S")
+
     #url='http://'+integral_services_server+'/integral/integral-timesystem/api/v1.0/'+informat+'/'+intime+'/'+outformat
     url=gw_endpoint+'/timesystem/api/v1.0/converttime/'+informat+'/'+t2str(intime)+'/'+outformat
     #url='https://analyse.reproducible.online/timesystem/api/v1.0/converttime/IJD/4000/SCWID'
+
 
     if debug:
         logging.info("url %s",url)
