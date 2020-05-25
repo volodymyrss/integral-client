@@ -217,15 +217,15 @@ def get_response(*args, **kwargs):
     #        return r
 
         return {
-			'flux':r['enflux'],
-			'phflux':r['phflux'],
-			'response':np.mean(r['response']),
-			'response_min':np.min(r['response']),
-			'response_max':np.max(r['response']),
-			'rate':np.mean(r['rate']),
-			'rate_min':np.min(r['rate']),
-			'rate_max':np.max(r['rate']),
-		}
+                        'flux':r['enflux'],
+                        'phflux':r['phflux'],
+                        'response':np.mean(r['response']),
+                        'response_min':np.min(r['response']),
+                        'response_max':np.max(r['response']),
+                        'rate':np.mean(r['rate']),
+                        'rate_min':np.min(r['rate']),
+                        'rate_max':np.max(r['rate']),
+                }
     except Exception as e:
         raise ServiceException("problem with service: "+repr(e)+"; "+repr(r)+" "+getattr(r,'text',"?"))
 
@@ -309,7 +309,7 @@ def get_hk(**uargs):
 
     args=dict(
             rebin=1,
-	    vetofiltermargin=0.02,
+            vetofiltermargin=0.02,
             ra=0,
             dec=0,
             t1=0,t2=0,
@@ -351,14 +351,14 @@ def get_hk(**uargs):
         if r.status_code!=200:
             raise Exception("got %i ( != 200 ) HTTP response from service; response: %s"%(r.status_code, r.text))
         if mode == "lc":
-            return np.genfromtxt(StringIO.StringIO(r.content))
+            return np.genfromtxt(io.StringIO(r.text))
         return r.json()
     except:
         logging.info(r.content)
         raise ServiceException(r.content)
 
 
-def get_hk_genlc(target, t0, dt_s):
+def get_hk_genlc(target, t0, dt_s, debug=False):
     url = gw_endpoint+"/integralhk/api/v1.0/genlc/%s/%.20lg/%.10lg"%(target, t0, dt_s)
 
     r = requests.get(url)
@@ -366,10 +366,15 @@ def get_hk_genlc(target, t0, dt_s):
     print(url)
 
     text = r.text.strip().strip("\"").replace("\\n","\n")
-    print(text)
 
+    if debug:
+        print(text)
 
-    d = np.genfromtxt(io.StringIO(text), skip_header=5, names=("t_ijd", "t_rel", "counts", "t_since_midnight") )
+    try:
+        d = np.genfromtxt(io.StringIO(text), skip_header=5, names=("t_ijd", "t_rel", "counts", "t_since_midnight") )
+    except:
+        print(text)
+        raise
 
     return d
 
