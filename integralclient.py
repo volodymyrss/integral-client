@@ -21,18 +21,19 @@ def cli():
     pass
 
 def get_auth():
-    try:
-        secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
-        secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
-
-        #secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
-        #username = "integral"
-        #username = "integral-limited"
-        username = secret_user
-        password = secret
-        return requests.auth.HTTPBasicAuth(username, password)
-    except:
-        return None
+    for n, mu, m in [
+                    ("env", 
+                        lambda:"integral",
+                        lambda:os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET")),
+                    ("homefile", 
+                        lambda:open(os.environ['HOME']+"/.secret-client-user").read().strip(),
+                        lambda:open(os.environ['HOME']+"/.secret-client").read().strip(),
+                        )
+                ]:
+        try:
+            return requests.auth.HTTPBasicAuth(mu(), m())
+        except:
+            print("failed with", n)
 
 auth=get_auth()
 
