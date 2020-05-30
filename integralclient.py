@@ -205,7 +205,6 @@ def get_response(*args, **kwargs):
 
 
     url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
-   # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url += "&emax=%(emax).5lg"
 
@@ -217,9 +216,6 @@ def get_response(*args, **kwargs):
 
     try:
         r=r.json()
-
-    #    if kind == "profile":
-    #        return r
 
         return {
                         'flux':r['enflux'],
@@ -275,37 +271,37 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         logging.info(r.content)
         raise ServiceException(e,r.content)
 
+enableODA = False
 
-try:
-    import oda
+if enableODA:
+    try:
+        import oda
 
-    def get_hk_binevents(**uargs):
-        t0_utc = converttime("ANY", uargs['utc'], "UTC")
+        def get_hk_binevents(**uargs):
+            t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-        r = oda.evaluate("odahub","integral-multidetector","binevents",
-                     t0_utc=t0_utc,
-                     span_s=uargs['span'],
-                     tbin_s=max(uargs['rebin'], 0.01),
-                     instrument=uargs['target'].lower(),
-                     emin=uargs['emin'],
-                     emax=uargs['emax'])
+            r = oda.evaluate("odahub","integral-multidetector","binevents",
+                         t0_utc=t0_utc,
+                         span_s=uargs['span'],
+                         tbin_s=max(uargs['rebin'], 0.01),
+                         instrument=uargs['target'].lower(),
+                         emin=uargs['emin'],
+                         emax=uargs['emax'])
 
-        logging.info(r.keys())
+            logging.info(r.keys())
 
-#<<<<<<< HEAD
-        c = np.array(r['lc']['counts'])
-        m = c > np.quantile(c, 0.1)
+            c = np.array(r['lc']['counts'])
+            m = c > np.quantile(c, 0.1)
 
-        r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
-        r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
-        r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
+            r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
+            r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
+            r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
 
-        return r
+            return r
 
-#        return r['lc']
-except Exception as e:
-    logging.info("failed to import oda")
-#>>>>>>> b384d7710d79ba334409dbe3036e167e70fc5f21
+    #        return r['lc']
+    except Exception as e:
+        logging.info("failed to import oda")
 
 
 def get_hk(**uargs):
@@ -384,7 +380,7 @@ def get_hk_genlc(target, t0, dt_s, debug=False):
     return d
 
 def get_cat(utc):
-    s = "http://134.158.75.161/cat/grbcatalog/api/v1.1/" + utc
+    s = "http://{}/cat/grbcatalog/api/v1.1/" + utc
     logging.info(s)
     r = requests.get(s,auth=auth)
     try:
