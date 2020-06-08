@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
 import os
-from service_exception import *
+from .service_exception import *
 import io
 import logging
 
@@ -308,6 +308,8 @@ if enableODA:
 def get_hk(**uargs):
     if uargs.get("wait",False):
         return wait(lambda :get_hk(**{**uargs, 'wait': False}))
+
+    debug=uargs.pop("debug", False)
 
     args=dict(
             rebin=1,

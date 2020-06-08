@@ -1,4 +1,4 @@
-
+import pytest
 
 def test_time():
     import integralclient as ic
@@ -24,6 +24,7 @@ def test_response():
     r = ic.get_response(0,0)
     print(r)
 
+@pytest.mark.skip(reason="not testing lal")
 def test_gethk():
     import integralclient as ic
     import random
@@ -32,7 +33,7 @@ def test_gethk():
     print("ijd",ijd)
 
     
-    lc = ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True)
+    lc = ic.get_hk(target="ACS", utc=ijd[0],  span=300, wait=True, debug=True)
 
     print(lc)
     
@@ -43,6 +44,7 @@ def test_gethk():
     assert lc['lc']['excvar'] < 1.5
     assert lc['lc']['excvar'] > 0.8
 
+@pytest.mark.skip(reason="not testing lal")
 def test_gethk_binevents():
     import integralclient as ic
     import random
@@ -66,10 +68,14 @@ def test_get_hk_genlc():
     import integralclient as ic
     import random
 
-    ijd = list(map(float, ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD").split(":")))
+    ct = ic.converttime("SCWID","%.4i00410010"%random.randint(100,2000),"IJD")
+
+    print("convertted time:", ct)
+
+    ijd = list(map(float, ct.split(":")))
     print("ijd",ijd)
 
     
-    lc = ic.get_hk_genlc("ACS", ijd[0], 30)
+    lc = ic.get_hk_genlc("ACS", ijd[0], 30, debug=True)
 
     print(lc)
