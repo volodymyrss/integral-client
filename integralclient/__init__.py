@@ -127,7 +127,7 @@ def _converttime(informat, intime, outformat, debug=True, j=False):
     if j:
         print(json.dumps(r))
     else:
-        logging.info(r)
+        click.echo(r)
     
 
 def converttime(informat, intime, outformat, debug=True):
