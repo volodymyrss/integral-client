@@ -10,6 +10,6 @@ if {'pytest', 'test', 'ptr'}.intersection(sys.argv):
 
 setup(description="integral-client",
       long_description=open('README.md').read(),
-      version='1.1.4',
+      version='1.1.5-dev0',
       include_package_data=True,
       setup_requires=setup_requires)
