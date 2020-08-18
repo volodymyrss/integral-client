@@ -272,7 +272,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         logging.info(r.content)
         raise ServiceException(e,r.content)
 
-enableODA = False
+enableODA = os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes"
 
 if enableODA:
     try:
