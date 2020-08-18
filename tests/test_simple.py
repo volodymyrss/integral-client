@@ -1,4 +1,8 @@
+import os
 import pytest
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 def test_time():
     import integralclient as ic
@@ -24,7 +28,7 @@ def test_response():
     r = ic.get_response(0,0)
     print(r)
 
-@pytest.mark.skip(reason="not testing lal")
+@pytest.mark.skipif(os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes", reason="not testing ODA")
 def test_gethk():
     import integralclient as ic
     import random
@@ -44,7 +48,7 @@ def test_gethk():
     assert lc['lc']['excvar'] < 1.5
     assert lc['lc']['excvar'] > 0.8
 
-@pytest.mark.skip(reason="not testing lal")
+@pytest.mark.skipif(os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes", reason="not testing ODA")
 def test_gethk_binevents():
     import integralclient as ic
     import random

@@ -24,16 +24,21 @@ def get_auth():
     for n, mu, m in [
                     ("env", 
                         lambda:"integral",
-                        lambda:os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET")),
+                        lambda:os.environ["K8S_SECRET_INTEGRAL_CLIENT_SECRET"]),
                     ("homefile", 
-                        lambda:open(os.environ['HOME']+"/.secret-client-user").read().strip(),
-                        lambda:open(os.environ['HOME']+"/.secret-client").read().strip(),
+                        lambda:open(os.environ.get('HOME')+"/.secret-client-user").read().strip(),
+                        lambda:open(os.environ.get('HOME')+"/.secret-client").read().strip(),
                         )
                 ]:
         try:
-            return requests.auth.HTTPBasicAuth(mu(), m())
-        except:
-            print("failed with", n)
+            u, p = mu(), m()
+            print("got AUTH with", n, "for", u)
+            return requests.auth.HTTPBasicAuth(u, p)
+        except Exception as e:
+            print("failed to get AUTH with", n, "due to:", e)
+
+    logging.warning("failed to get auth by any method: will not use auth")
+
 
 auth=get_auth()
 
