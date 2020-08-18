@@ -277,37 +277,42 @@ def get_sc(utc, ra=0, dec=0, debug=False):
         logging.info(r.content)
         raise ServiceException(e,r.content)
 
+
 enableODA = os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes"
 
-if enableODA:
-    try:
-        import oda # type: ignore
+try:
+    import oda # type: ignore
+except Exception as e:
+    logging.info("failed to import oda: %s", e)
+    enableODA = False
 
-        def get_hk_binevents(**uargs):
-            t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-            r = oda.evaluate("odahub","integral-multidetector","binevents",
-                         t0_utc=t0_utc,
-                         span_s=uargs['span'],
-                         tbin_s=max(uargs['rebin'], 0.01),
-                         instrument=uargs['target'].lower(),
-                         emin=uargs['emin'],
-                         emax=uargs['emax'])
+def get_hk_binevents(**uargs):
+    if not enableODA:
+        raise NotImplementedError
 
-            logging.info(r.keys())
+    t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-            c = np.array(r['lc']['counts'])
-            m = c > np.quantile(c, 0.1)
+    r = oda.evaluate("odahub","integral-multidetector","binevents",
+                 t0_utc=t0_utc,
+                 span_s=uargs['span'],
+                 tbin_s=max(uargs['rebin'], 0.01),
+                 instrument=uargs['target'].lower(),
+                 emin=uargs['emin'],
+                 emax=uargs['emax'])
 
-            r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
-            r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
-            r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
+    logging.info(r.keys())
 
-            return r
+    c = np.array(r['lc']['counts'])
+    m = c > np.quantile(c, 0.1)
+
+    r['lc']['count limit 3 sigma'] = np.std( c[m] )  * 3
+    r['lc']['excvar'] = np.std( c[m] ) / np.mean(c[m])**0.5
+    r['lc']['maxsig'] = np.max( (c[m] - np.mean(c[m]))/c[m]**0.5) / r['lc']['excvar']
+
+    return r
 
     #        return r['lc']
-    except Exception as e:
-        logging.info("failed to import oda")
 
 
 def get_hk(**uargs):
