@@ -4,9 +4,9 @@ import requests
 import urllib
 import time
 from io import StringIO
-from astropy.coordinates import SkyCoord
-from astropy import units as u
-import numpy as np
+from astropy.coordinates import SkyCoord # type: ignore
+from astropy import units as u # type: ignore
+import numpy as np # type: ignore
 import os
 from .service_exception import *
 import io
@@ -281,7 +281,7 @@ enableODA = os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes"
 
 if enableODA:
     try:
-        import oda
+        import oda # type: ignore
 
         def get_hk_binevents(**uargs):
             t0_utc = converttime("ANY", uargs['utc'], "UTC")
