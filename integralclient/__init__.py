@@ -267,7 +267,7 @@ def get_response_map(**kwargs):
 
 
 def get_sc(utc, ra=0, dec=0, debug=False):
-    s = "http://cdcihn/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
+    s = "https://www.astro.unige.ch/cdci/astrooda/dispatch-data/gw/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         logging.info(s)
     r = requests.get(s,timeout=300)
