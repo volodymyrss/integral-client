@@ -10,16 +10,22 @@ import numpy as np
 import os
 from service_exception import *
 
-secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
-secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
+try:
+    secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
+    secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
+
+    def get_auth():
+        #username = "integral"
+        #username = "integral-limited"
+        username = secret_user
+        password = secret
+        return requests.auth.HTTPBasicAuth(username, password)
+except:
+    def get_auth():
+        return
+
 #secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
 
-def get_auth():
-    #username = "integral"
-    #username = "integral-limited"
-    username = secret_user
-    password = secret
-    return requests.auth.HTTPBasicAuth(username, password)
 
 auth=get_auth()
 
