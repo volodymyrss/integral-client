@@ -10,28 +10,32 @@ import numpy as np
 import os
 from service_exception import *
 
-try:
-    secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
-    secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
-
-    def get_auth():
-        #username = "integral"
-        #username = "integral-limited"
-        username = secret_user
-        password = secret
-        return requests.auth.HTTPBasicAuth(username, password)
-except:
-    def get_auth():
-        return
-
+secret = os.environ.get("K8S_SECRET_INTEGRAL_CLIENT_SECRET",open(os.environ['HOME']+"/.secret-client").read().strip())
+secret_user = open(os.environ['HOME']+"/.secret-client-user").read().strip()
 #secret_location=os.environ.get("INTEGRAL_CLIENT_SECRET",os.environ['HOME']+"/.secret-client")
 
+def get_auth():
+    #username = "integral"
+    #username = "integral-limited"
+    username = secret_user
+    password = secret
+    return requests.auth.HTTPBasicAuth(username, password)
 
 auth=get_auth()
 
 integral_services_server="134.158.75.161"
-
 timesystem_endpoint = "http://cdcihn/timesystem"
+
+
+def wait(f,timeout=5,ntries=30):
+    ntries_left = ntries
+    while ntries_left > 0:
+        try:
+            return f()
+        except Exception as e: # or service?
+            print("service exception", repr(e), "tries left", ntries_left)
+            ntries_left-=1
+            time.sleep(timeout)
 
 def t2str(t):
     if isinstance(t,float):
@@ -39,9 +43,9 @@ def t2str(t):
     
     if isinstance(t,int):
         return "%i"%t
-
-    return t
-
+    
+    if isinstance(t,str):
+        return t
 
 def scwlist(t1, t2, dr="any", debug=True):
     url=timesystem_endpoint+'/api/v1.0/scwlist/'+dr+'/'+t2str(t1)+'/'+t2str(t2)
@@ -100,6 +104,9 @@ def converttime(informat,intime,outformat, debug=True):
             return r.text
 
         except Exception as e:
+            if 'is close' in repr(e):
+                raise
+                
             ntries_left -= 1
 
             if ntries_left > 0:
@@ -109,74 +116,60 @@ def converttime(informat,intime,outformat, debug=True):
             else:
                 raise
         
-
-
     
 
-def data_analysis(name, modules, assume):
-    c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/" + name,
-                     params=dict(modules=modules, assume=assume))
-    try:
-        return c.json()
-    except:
-        return c.text
 
 
-def data_analysis_forget(jobkey):
-    c = requests.get("http://134.158.75.161/data/analysis/api/v1.0/jobs/forget/" + jobkey)
-    try:
-        return c.json()
-    except ServiceException as e:
-        print(e)
-        return c.text
+def get_response(*args, **kwargs):
+    if kwargs.get('wait', True):
+        return wait(lambda :get_response(*args,**{**kwargs, 'wait':False}))
+    
+    theta, phi = args 
 
+    default_kwargs= dict(
+        radius=0.1,
+        alpha=-1,
+        epeak=600,
+        emin=75,
+        emax=2000,
+        emax_rate=20000,
+        lt=75,
+        ampl=1,
+        debug=False,
+        target="ACS",
+        model="compton",
+        width=1,
+        beta=-2.5,
+        wait=True,
+        theta=theta,
+        phi=phi,
+    )
 
-def get_spimm_response(theta, phi, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False, target="ACS",beta=-2.5,model="compton"):
-    s = "http://134.158.75.161/integral/api/v1.0/spiresponse/direction/%.5lg/%.5lg?lt=%.5lg&model=%s&beta=%.5lg&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
-    theta, phi, lt, model, beta, ampl, alpha, epeak, emin, emax, emax_rate)
+    kwargs = {**default_kwargs, **kwargs}
+    kwargs['lt'] = str(kwargs['lt'])
 
-    if debug:
-        print(s)
-    r = requests.get(s,auth=auth)
-
-    try:
-        return r.json()
-    except:
-        print(r.text)
-
-def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5):
+def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",model="compton", width=1,beta=-2.5, kind="summary"):
     #s = "http://134.158.75.161/integral/api/v1.0/response/direction/%.5lg/%.5lg?lt=%.5lg&model=compton&ampl=%.5lg&alpha=%.5lg&epeak=%.5lg&emin=%.5lg&emax=%.5lg&emax_rate=%.5lg" % (
     #theta, phi, lt, ampl, alpha, epeak, emin, emax, emax_rate)
 
-    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
+
+    #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
+    url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg&width=%(width).5lg"
    # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
     url+="&emin=%(emin).5lg"
     url += "&emax=%(emax).5lg"
 
-    url = url % dict(
-        lt=str(lt),
-        theta=theta,
-        phi=phi,
-        radius=radius,
-        alpha=alpha,
-        epeak=epeak,
-        model=model,
-        beta=beta,
-        width=width,
-        ampl=ampl,
-        emin=emin,
-        emax=emax,
-        emax_rate=emax_rate
-    )
+    url = url % kwargs
 
-    #print(url)
+    print(url)
 
-    if debug:
-        print(url)
     r = requests.get(url,auth=auth)
 
     try:
         r=r.json()
+
+        if kind == "profile":
+            return r
 
         return {
 			'flux':r['enflux'],
@@ -189,107 +182,95 @@ def get_response(theta, phi, radius=0.1, alpha=-1, epeak=600, emin=75, emax=2000
 			'rate_max':np.max(r['rate']),
 		}
     except Exception as e:
-        raise ServiceException("problem with service: "+r.text)
+        raise ServiceException("problem with service: "+r.content)
 
 
-def get_response_map(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5):
-    url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
-   # url="http://localhost:5556/api/v1.0/"+target+"/response?lt=%(lt).5lg&theta=%(theta).5lg&phi=%(phi).5lg&radius=%(radius).5lg&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg"
+def get_response_map(**kwargs):
+    if kwargs.get('wait', True):
+        return wait(lambda :get_response_map(**{**kwargs, 'wait':False}))
+
+    default_kwargs = dict(alpha=-1, epeak=600, emin=75, emax=2000, emax_rate=20000, lt=75, ampl=1, debug=False,target="ACS",kind="response",model="compton",beta=-2.5)
+
+    kwargs = {**default_kwargs, **kwargs}
+    kwargs['lt'] = str(kwargs['lt'])
+
+    url="http://cdcihn/response/api/v1.0/%(target)s/response?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
+    #url="http://134.158.75.161/data/response/api/v1.0/"+target+"?lt=%(lt)s&mode=all&epeak=%(epeak).5lg&alpha=%(alpha).5lg&ampl=%(ampl).5lg&model=%(model)s&beta=%(beta).5lg"
     url+="&emin=%(emin).5lg"
     url+="&emax=%(emax).5lg"
     url+="&emax_rate=%(emax_rate).5lg"
     
-    lt=str(lt)
 
-    url = url % dict(
-        lt=lt,
-        model=model,
-        alpha=alpha,
-        beta=beta,
-        epeak=epeak,
-        ampl=ampl,
-        emin=emin,
-        emax=emax,
-        emax_rate=emax_rate
-    )
+    url = url % kwargs
+    print(url)
+    
+    try:
+        r = requests.get(url,auth=auth)
+        r = r.json()
+    except Exception as e:
+        print("problem",e)
+        print(r.text)
+        raise
 
-    if debug:
-        print(url)
-    r = requests.get(url,auth=auth).json()
-
-    return r[kind]
+    return r[kwargs['kind']]
 
 
 def get_sc(utc, ra=0, dec=0, debug=False):
-    s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
+    s = "http://cdcihn/scsystem/api/v1.0/sc/" + utc + "/%.5lg/%.5lg" % (ra, dec)
+    #s = "http://134.158.75.161/integral/integral-sc-system/api/v1.0/" + utc + "/%.5lg/%.5lg" % (ra, dec)
     if debug:
         print(s)
+    r = requests.get(s,auth=auth,timeout=300)
+    try:
+        return r.json()
+    except Exception as e:
+        print(r.content)
+        raise ServiceException(e,r.content)
 
-    ntries=10
-    while ntries>0:
-        r = requests.get(s,auth=auth,timeout=300)
-        try:
-            return r.json()
-        except Exception as e:
-            print(r.text)
-            if ntries>0:
-                time.sleep(3)
-                ntries-=1
-                continue
-            raise ServiceException(e,r.text)
 
-def get_hk_lc(target,utc,span,**uargs):
-    args=dict(
-            rebin=0,
-            api="v1.0",
-            )
-    args.update(uargs)
+try:
+    import oda
 
-    args['target']=target
-    args['utc']=utc
-    args['span']=span
+    def get_hk_binevents(**uargs):
+        t0_utc = converttime("ANY", uargs['utc'], "UTC")
 
-    if args['target']=="VETO":
-        args['target'] = "IBIS_VETO"
-        raise ServiceException(r.text)
+        r = oda.evaluate("odahub","integral-multidetector","binevents",
+                     t0_utc=t0_utc,
+                     span_s=uargs['span'],
+                     tbin_s=max(uargs['rebin'], 0.01),
+                     instrument=uargs['target'].lower(),
+                     emin=uargs['emin'],
+                     emax=uargs['emax'])
 
-    print(args)
+        print(r.keys())
 
-    s = "http://134.158.75.161/data/integral-hk/api/%(api)s/%(target)s/%(utc)s/%(span).5lg&rebin=%(rebin).5lg" % args 
-    print(s)
+        return r['lc']
+except Exception as e:
+    print("failed to import oda")
 
-    if 'dry' in args and args['dry']:
-        return
-
-    if 'onlyprint' in args and args['onlyprint']:
-        return
-
-    r = requests.get(s,auth=auth)
-    if r.status_code==202:
-        if find_exception(r.text) is None:
-            try:
-                c=r.json()
-            except:
-                c=r.text
-            raise Waiting(s,c)
-    if r.status_code!=200:
-        raise ServiceException("bad status: %i"%r.status_code,r.text)
-    return r
 
 def get_hk(**uargs):
+    if uargs.get("wait",False):
+        return wait(lambda :get_hk(**{**uargs, 'wait': False}))
+
     args=dict(
-            rebin=0,
+            rebin=1,
 	    vetofiltermargin=0.02,
             ra=0,
             dec=0,
             t1=0,t2=0,
             burstfrom=0,burstto=0,
             greenwich="yes",
+            emin=25,
+            emax=80,
             )
     args.update(uargs)
 
     if args['target']=="VETO":
         args['target'] = "IBIS_VETO"
+
+    if args['target'] in ["ISGRI", "SPI"]:
+        return get_hk_binevents(**args)
 
     if 'mode' in uargs:
         mode=uargs.pop("mode")
@@ -297,8 +278,9 @@ def get_hk(**uargs):
         mode="stats"
 
 
-    s = "http://134.158.75.161/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
+    s = "http://lal.odahub.io/data/integral-hk/api/v1.0/%(target)s/%(utc)s/%(span).5lg/stats?" % args + \
         "rebin=%(rebin).5lg&ra=%(ra).5lg&dec=%(dec).5lg&burstfrom=%(t1).5lg&burstto=%(t2).5lg&vetofiltermargin=%(vetofiltermargin).5lg&greenwich=%(greenwich)s" % args
+
     print(s.replace("stats", "png"))
 
     if mode == "lc":
@@ -313,13 +295,13 @@ def get_hk(**uargs):
     r = requests.get(s,auth=auth)
     try:
         if r.status_code!=200:
-            raise ServiceException(r.text)
+            raise Exception("got %i ( != 200 ) HTTP response from service; response: %s"%(r.status_code, r.text))
         if mode == "lc":
-            return np.genfromtxt(StringIO(r.text))
+            return np.genfromtxt(StringIO.StringIO(r.content))
         return r.json()
     except:
-        print(r.text)
-        raise ServiceException(r.text)
+        print(r.content)
+        raise ServiceException(r.content)
 
 
 def get_cat(utc):
@@ -329,55 +311,6 @@ def get_cat(utc):
     try:
         return r.json()
     except:
-        raise ServiceException(r.text)
+        raise ServiceException(r.content)
 
-
-import time
-def query_web_service(service,url,params={},wait=False,onlyurl=False,debug=False,json=False,test=False,kind="GET",data={}):
-    s = "http://134.158.75.161/data/integral-hk/api/v2.0/"+service+"/" + url
-    print(s)
-
-    if debug:
-        params=dict(params.items()+[('debug','yes')])
-
-    if onlyurl:
-        return s+"?"+urllib.urlencode(params)
-
-    while True:
-        if kind == "GET":
-            r = requests.get(s,auth=auth,params=params)
-        elif kind == "POST":
-            r = requests.post(s,auth=auth,params=params,data=data)
-        else:
-            raise Exception("can not handle request: "+kind)
-        
-        find_exception(r.text)
-
-        if test:
-            print(r.status_code)
-            return
-            
-       # print r.text
-        if r.status_code==200:
-            if debug:
-                c=r.json()
-                if c['result'] is not None:
-                    c['result']=c['result'][:300]
-                return c
-            else:
-                if json:
-                    try:
-                        return r.json()
-                    except Exception as e:
-                        print(e)#,r.text
-                        raise
-                else:
-                    return r
-        if not wait:
-            try:
-                c=r.json()
-            except:
-                c=r.text
-            raise Waiting(s,c)
-        time.sleep(1.)
 
