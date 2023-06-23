@@ -279,11 +279,7 @@ def get_sc(utc, ra=0, dec=0, debug=False):
 
 enableODA = os.environ.get("INTEGRALCLIENT_ENABLE_ODA", "no") == "yes"
 
-try:
-    import oda # type: ignore
-except Exception as e:
-    logging.info("failed to import oda: %s", e)
-    enableODA = False
+enableODA = False
 
 
 def get_hk_binevents(**uargs):
