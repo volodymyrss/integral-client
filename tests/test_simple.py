@@ -2,7 +2,6 @@ import os
 import pytest
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
 
 def test_time():
     import integralclient as ic

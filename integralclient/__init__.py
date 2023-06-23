@@ -12,7 +12,6 @@ from .service_exception import *
 import io
 import logging
 
-logging.basicConfig()
 
 import click
 
